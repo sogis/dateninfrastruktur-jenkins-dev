@@ -1,0 +1,240 @@
+= Docker-Image und Airgap
+:page-layout: docs
+:toc: macro
+:toclevels: 2
+
+toc::[]
+
+== Image bauen
+
+```bash
+cd ../datenportal-jenkins-dev
+./bin/build-image.sh
+```
+
+Gemeinsamer Image-Vertrag:
+
+* Registry: `sogis/datenportal-jenkins:<image-version>`
+* lokaler Build: `datenportal-jenkins:local`
+
+Default-Basisimage:
+
+* `jenkins/jenkins:${JENKINS_VERSION}-lts-jdk21`
+
+== Native amd64-/ARM64-Builds im GitHub-Mirror
+
+Codeberg bleibt das führende Repository. Der GitHub-Mirror führt den Workflow
+`.github/workflows/publish-docker-image.yml` aus. Workflow-Änderungen werden in
+Codeberg gepflegt; eine gesonderte GitHub-Version wird nicht unterhalten.
+
+Die Vorbereitung löst Plugin und Offline-Bundle einmal auf und archiviert den
+Build-Kontext mit `build-args.json` sowie denselben Themenrepo-Commit als
+Testeingabe. Zwei native Runner (`ubuntu-24.04` für amd64,
+`ubuntu-24.04-arm` für ARM64) bauen diesen Kontext mit Buildx und `--load`.
+Jede Architektur muss die tatsächliche Imageplattform und die Offline-Tests
+bestehen. QEMU ist für diese CI-Builds nicht nötig.
+
+Erst nach beiden erfolgreichen Jobs werden die laufbezogenen Zwischenimages
+in Docker Hub und GHCR zu gemeinsamen Versions- und `latest`-Tags zusammengeführt.
+Das Publish-Skript verwendet zuvor geprüfte Digests und kontrolliert die beiden
+Plattformen nach dem Push. Ein Build-/Testfehler darf keinen dieser gemeinsamen
+Tags aktualisieren. Bei Wiederholung alle Jobs erneut starten; Zwischenimages
+tragen auch die Nummer des Laufversuchs. Registryübergreifende Updates sind
+nicht atomar und müssen bei einem Publish-Fehler in beiden Registries geprüft werden.
+
+Der normale lokale Aufruf bleibt `./bin/build-image.sh`; benötigt werden jetzt
+Buildx und Python 3 zusätzlich zu den bisherigen Buildwerkzeugen.
+`IMAGE_PLATFORM` kann genau `linux/amd64` oder `linux/arm64` vorgeben. Eine bereits
+abgeschlossene Vorbereitung kann ohne erneute Dependency-Auflösung verwendet werden:
+
+[source,bash]
+----
+./bin/prepare-image-context.sh
+IMAGE_PLATFORM=linux/arm64 ./bin/build-image.sh --prepared-context build/docker-context
+----
+
+`IMAGE_NAME` bestimmt den lokalen Tag, Versionen und Labels stammen aus
+`build-args.json`. Die vorhandenen Tests laufen auch auf diesem Weg zwingend.
+`THEMEN_REPO_DIR` muss dabei zur vorbereiteten Revision passen. Build-Kontexte
+und Archive bleiben ignorierte Buildartefakte; keine Credentials einbetten.
+
+== Was in den Build-Kontext gestaged wird
+
+Der Image-Build staged:
+
+* `plugins.txt`
+* `casc/jenkins-production.yaml` als `jenkins.yaml`
+* das vorbereitete Offline-Bundle
+* das aus `PLUGIN_SOURCE` aufgeloeste
+  `jenkins-gretl-datenportal-plugin.hpi`
+* das EntryPoint-Skript
+
+Das Themenrepo wird bewusst nicht in das Image kopiert. `THEMEN_REPO_DIR` ist
+nur die Build-Quelle für das Offline-Bundle; zur Laufzeit werden
+`THEMEN_REPO_URL` und `THEMEN_REPO_BRANCH` aus der Deployment-Konfiguration
+gesetzt. Das Jenkins-Home gehört in ein persistentes Volume und nicht in das
+Image.
+
+Das lokale Shell-Profil mit `casc/jenkins.yaml` und `admin/admin` bleibt auf die
+Entwicklung beschränkt. Das Image verwendet `casc/jenkins-production.yaml` mit
+Active Directory, verpflichtendem StartTLS und projektbezogener
+Matrix-Autorisierung. `bjsvwzie` ist als direkter Jenkins-Administrator
+konfiguriert; der eingebaute Jenkins-Prinzipal `authenticated` erhält nur
+`Overall/Read`. Der Java-Truststore wird von der Deployment-Umgebung über
+`JAVA_OPTS` beziehungsweise `JENKINS_JAVA_OPTS` bereitgestellt.
+
+Die xref:referenz-konfiguration.adoc[Konfigurationsreferenz] enthält die
+Betriebsmatrix und alle Pflichtvariablen.
+
+Das Image ist für beide Betriebsarten identisch. `JENKINS_RUNTIME_MODE=dev`
+überspringt die Produktionsprüfungen des Entrypoints und erwartet eine von
+aussen gemountete lokale JCasC, die separat über `CASC_JENKINS_CONFIG`
+ausgewählt werden muss. Der Entrypoint wechselt die JCasC-Datei nicht selbst.
+`JENKINS_RUNTIME_MODE=production` aktiviert die Prüfung der AD- und Deployment-Variablen. Die lokale JCasC wird nie in das
+allgemeine Registry-Image eingebettet.
+
+Das Plugin kann mit `PLUGIN_SOURCE=local|maven|auto` aus dem lokalen Checkout
+oder aus dem Maven-Repository `PLUGIN_REPOSITORY_URL` bezogen werden. Beim
+Image-Bau wird daraus eine HPI installiert; beim Containerstart findet keine
+Plugin-Auflösung statt.
+
+== Java-Laufzeiten im Image
+
+Das Jenkins-Basisimage bringt Jenkins auf Java 21. Das Dockerfile laedt
+zusaetzlich ein Java-17-JDK nach `/opt/java/openjdk17` und exportiert dieses
+als `GRADLE_JAVA_HOME_17` fuer GRETL und den Themenrepo-Wrapper.
+
+Die Trennung der Laufzeiten entspricht damit dem lokalen Shell-Setup.
+
+== DuckDB-Extensions
+
+Das Dockerfile ruft nach dem Kopieren des Offline-Bundles mit Java 17 den
+vorhandenen GRETL-`DuckDbExtensionInstaller` fuer `postgres spatial excel httpfs s3` auf.
+DuckDB 1.5.2 behandelt `s3` als Alias von `httpfs`; daher entsteht kein separates
+`s3.duckdb_extension`-Binary.
+DuckDB waehlt dabei die zur eingebundenen JDBC-Version und Linux-Architektur
+passenden Binaerdateien. Unterstuetzt werden die Image-Architekturen `amd64`
+und `arm64`; es werden keine auf dem Build-Host installierten Extensions kopiert.
+Der Build benoetigt Netzwerk und bricht ab, wenn Installation oder Laden einer
+Extension fehlschlagen.
+
+`DUCKDB_EXTENSION_DIRECTORY` ist im Image auf
+`/opt/datenportal/duckdb-extensions` gesetzt. Die Dateien sind fuer `jenkins`
+lesbar, aber nicht schreibbar, und liegen ausserhalb des persistenten
+Jenkins-Homes. Die Umgebung gilt in Dev und Produktion. Bei einem
+JDBC-Versionswechsel installiert der Image-Neubau die passenden Extensions.
+GRETL-Jobs belassen `installExtensions` auf `false` und laden vorhandene
+Extensions zur Laufzeit. Dieser Vertrag betrifft das Containerimage;
+`bin/start.sh` installiert dagegen passende Host-Extensions nach
+`DUCKDB_EXTENSION_DIRECTORY` (Default `build/duckdb-extensions-host`) und macht
+sie ebenfalls unter `$HOME/.duckdb/extensions` auffindbar. Die erste Installation
+benötigt Netzwerk; `SKIP_OFFLINE_BUNDLE=1` überspringt diesen Schritt nicht.
+
+== Automatischer DuckDB-Offlinetest
+
+`bin/build-image.sh` ruft nach dem Docker-Build verpflichtend
+`bin/test-image-duckdb.sh` auf. Erst wenn beide Schritte erfolgreich waren,
+meldet das Buildscript Erfolg. Fuer ein vorhandenes Image:
+
+[source,bash]
+----
+./bin/test-image-duckdb.sh datenportal-jenkins:local
+----
+
+Ohne Argument wird `IMAGE_NAME` beziehungsweise `datenportal-jenkins:local`
+verwendet. `THEMEN_REPO_DIR` verweist auf den zum Image passenden Themenrepo-Stand
+und ist standardmaessig `../datenportal-themenrepo`.
+
+Die Pruefung startet temporaere Container als `jenkins` mit `--network none`,
+frischem Home und temporaerem Arbeitsverzeichnis. Vorhandene Jenkins-Volumes
+und Host-Caches werden nicht eingebunden. Die versionierten technischen
+Fixtures unter `tests/duckdb` sowie Wrapper und Initialisierung aus dem
+Themenrepo werden read-only eingebunden und fuer die Ausfuehrung temporaer
+kopiert. Jenkins selbst wird dabei nicht gestartet.
+
+Geprueft werden:
+
+* Laden aller drei Extensions aus dem konfigurierten, nicht schreibbaren
+  Image-Verzeichnis sowie eine Spatial-Funktion;
+* CSV-Export nach XLSX und Parquet mit `DuckDbSqlExecutor`,
+  `installExtensions false` und dem Themenrepo-Wrapper mit `--offline`;
+* erneutes Einlesen beider Formate und Pruefung der Spalten, Zeilenzahl sowie
+  aller erwarteten Text- und Zahlenwerte;
+* ein separater Negativtest mit leerem Extension-Verzeichnis, der gezielt
+  wegen der fehlenden `excel`-Extension scheitern muss.
+
+Die Tests pruefen die Architektur des ausgefuehrten Images. Eine erfolgreiche
+Pruefung auf `arm64` ersetzt keinen Test auf `amd64` und umgekehrt.
+
+== Produktion konfigurieren
+
+Das Image bringt die Produktions-JCasC mit. Diese setzt `managed-git` fest;
+`THEMEN_REPO_MODE` ändert diesen Wert nicht. Die folgende beispielhafte
+Konfigurationsdatei wird ausserhalb des Repositories durch das Deployment
+bereitgestellt. URLs, Domain und Bind-Identität müssen zur Umgebung passen;
+eine AIO-AD-Gruppe für Jenkins-Rechte ist nicht erforderlich:
+
+[source,text]
+----
+JENKINS_RUNTIME_MODE=production
+THEMEN_REPO_URL=https://git.example.invalid/datenportal-themenrepo.git
+THEMEN_REPO_BRANCH=main
+THEMEN_REPO_WRITE_BACK_ENABLED=false
+JENKINS_URL=https://jenkins.example.invalid/
+JENKINS_ADMIN_ADDRESS=jenkins@example.invalid
+AD_DOMAIN=example.invalid
+AD_SERVERS=ad01.example.invalid:389
+AD_BIND_NAME=CN=jenkins-bind,OU=Service Accounts,DC=example,DC=invalid
+----
+
+`AD_BIND_PASSWORD` kommt separat aus dem Secret-Management. Ein schematischer
+Docker-Start übernimmt es aus einer bereits gesetzten Prozessumgebung, ohne den
+Wert in die Kommandozeile zu schreiben:
+
+[source,bash]
+----
+docker run --rm \
+  --env-file /pfad/zur/jenkins-production.env \
+  --env AD_BIND_PASSWORD \
+  -v jenkins-home:/var/jenkins_home \
+  datenportal-jenkins:local
+----
+
+Netzwerk, Portfreigabe und Java-Truststore sind zusätzlich durch das Deployment
+bereitzustellen. Der Entrypoint prüft Pflichtwerte, aber nicht die Erreichbarkeit
+von Git oder AD. Für privates HTTPS-Git ein Jenkins-Credential administrativ oder
+über eine separate JCasC-Secrets-Konfiguration bereitstellen und dessen ID mit
+`THEMEN_REPO_CREDENTIALS_ID` referenzieren.
+
+Auch in Produktion bleibt der Standardjob ohne S3-Freigabe eine Vorschau.
+S3-Publikation ist unabhängig vom Git-Modus möglich. Für die zusätzliche
+Git-Übernahme sind `THEMEN_REPO_WRITE_BACK_ENABLED=true`,
+`THEMEN_REPO_COMMITTER_NAME` und `THEMEN_REPO_COMMITTER_EMAIL` erforderlich.
+Zusätzlich gelten die Repository-Prüfungen des Themenrepo-Builds. S3-Publikation benötigt separat `s3Publish=true`;
+ein Reload wird zusätzlich pro Lauf angefordert.
+
+Nach Änderungen an Container-ENV oder Image den Container neu erstellen;
+ein reiner Neustart übernimmt keine neue ENV-Konfiguration. Nach Änderungen
+am Repository-Kontext den Seeder erneut ausführen.
+
+== Airgap-nahe Verifikation
+
+Für harte GRETL-Airgap-Tests reicht `--offline` allein nicht. Die oben
+beschriebenen Image-Tests führen die eigentlichen Tasks zusätzlich mit
+`--network none` aus. Ein Produktions-Jenkins benötigt dagegen Zugriff auf
+Git und AD; ein Containerstart ohne Netzwerk beweist keine funktionierende
+Anmeldung oder Lieferverarbeitung mit diesen externen Diensten.
+
+Der eigentliche Offline-Vertrag bleibt dabei:
+
+* Gradle-Distribution aus `GRADLE_USER_HOME`
+* Plugin- und Runtime-Jars aus `DATENPORTAL_OFFLINE_JARS_DIR`
+* native DuckDB-Extensions aus `DUCKDB_EXTENSION_DIRECTORY`
+
+== Weiterfuehrend
+
+* Die Build-Koordinaten fuer das Offline-Bundle liegen im Repo
+  link:https://codeberg.org/edigonzales/datenportal-themenrepo[datenportal-themenrepo].
+* Die generierten Jobs, die spaeter gegen dieses Image laufen, sind im Repo
+  link:https://codeberg.org/edigonzales/datenportal-jenkins-gretl-plugin[datenportal-jenkins-gretl-plugin]
+  beschrieben.

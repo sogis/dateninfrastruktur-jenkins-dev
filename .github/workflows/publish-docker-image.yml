@@ -1,0 +1,250 @@
+name: Publish Docker image
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      plugin_version:
+        description: 'Optional exact plugin version (x.y.z or x.y.z-SNAPSHOT)'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: publish-docker-image
+  cancel-in-progress: false
+
+env:
+  IMAGE_NAME: dateninfrastruktur-jenkins:ci
+  DOCKERHUB_IMAGE: sogis/dateninfrastruktur-jenkins
+  PLUGIN_GROUP: ch.so.agi.jenkins
+  PLUGIN_ARTIFACT: jenkins-gretl-datenportal-plugin
+  THEMEN_REPO_URL: https://github.com/sogis/dateninfrastruktur-themenrepo.git
+  THEMEN_REPO_DIR: ${{ github.workspace }}/../dateninfrastruktur-themenrepo
+
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    outputs:
+      image_version: ${{ steps.image.outputs.image_version }}
+    steps:
+      - name: Check out image repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install build tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v mvn >/dev/null 2>&1 || ! command -v rsync >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y maven rsync
+          fi
+          java -version
+          mvn --version
+
+      - name: Check out Themenrepo
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf "$THEMEN_REPO_DIR"
+          git clone --depth 1 --branch main "$THEMEN_REPO_URL" "$THEMEN_REPO_DIR"
+
+      - name: Check out plugin repository
+        shell: bash
+        env:
+          PLUGIN_REPO: ${{ github.workspace }}/../dateninfrastruktur-jenkins-gretl-plugin
+        run: |
+          set -euo pipefail
+          rm -rf "$PLUGIN_REPO"
+          git clone --depth 1 --branch main https://github.com/sogis/dateninfrastruktur-jenkins-gretl-plugin.git "$PLUGIN_REPO"
+
+      - name: Resolve plugin version
+        id: plugin
+        shell: bash
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+          REQUESTED_PLUGIN_VERSION: ${{ inputs.plugin_version }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$REF_TYPE" == "tag" ]]; then
+            if [[ "$REF_NAME" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+              tag_plugin_version="${BASH_REMATCH[1]}"
+            else
+              echo "Expected a tag in the form vX.Y.Z, got: $REF_NAME" >&2
+              exit 1
+            fi
+            python3 bin/resolve_plugin_version.py \
+              --version "$tag_plugin_version" \
+              --repository-url https://jars.interlis.guru/releases >> "$GITHUB_OUTPUT"
+          elif [[ -n "$REQUESTED_PLUGIN_VERSION" ]]; then
+            python3 bin/resolve_plugin_version.py \
+              --version "$REQUESTED_PLUGIN_VERSION" >> "$GITHUB_OUTPUT"
+          else
+            python3 bin/resolve_plugin_version.py >> "$GITHUB_OUTPUT"
+          fi
+
+          echo "Using plugin version: $(grep '^plugin_version=' "$GITHUB_OUTPUT" | tail -n 1)"
+
+      - name: Determine image version
+        id: image
+        shell: bash
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+          PLUGIN_BASE_VERSION: ${{ steps.plugin.outputs.plugin_base_version }}
+        run: |
+          set -euo pipefail
+          if [[ "$REF_TYPE" == "tag" ]]; then
+            image_version="${REF_NAME#v}"
+          else
+            image_version="${PLUGIN_BASE_VERSION}-${GITHUB_RUN_NUMBER}"
+          fi
+          echo "image_version=$image_version" >> "$GITHUB_OUTPUT"
+          echo "Image version: $image_version"
+
+      - name: Prepare shared context and test inputs
+        shell: bash
+        env:
+          IMAGE_VERSION: ${{ steps.image.outputs.image_version }}
+          PLUGIN_VERSION: ${{ steps.plugin.outputs.plugin_version }}
+          PLUGIN_REPO: ${{ github.workspace }}/../dateninfrastruktur-jenkins-gretl-plugin
+          PLUGIN_SOURCE: local
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests
+          ./bin/prepare-image-context.sh
+          tar -czf build/image-context.tar.gz -C build/docker-context .
+          git -C "$THEMEN_REPO_DIR" archive --format=tar.gz \
+            -o "$GITHUB_WORKSPACE/build/themenrepo.tar.gz" HEAD
+
+      - name: Transfer identical inputs to both architectures
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-inputs
+          path: |
+            build/image-context.tar.gz
+            build/themenrepo.tar.gz
+          compression-level: 0
+          retention-days: 1
+          if-no-files-found: error
+
+  build:
+    needs: prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Check out image repository
+        uses: actions/checkout@v4
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Download prepared inputs
+        uses: actions/download-artifact@v4
+        with:
+          name: image-inputs
+          path: build/inputs
+
+      - name: Restore shared context and Themenrepo revision
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/docker-context "$THEMEN_REPO_DIR"
+          tar -xzf build/inputs/image-context.tar.gz -C build/docker-context
+          tar -xzf build/inputs/themenrepo.tar.gz -C "$THEMEN_REPO_DIR"
+
+      - name: Build and test native image
+        shell: bash
+        env:
+          IMAGE_PLATFORM: linux/${{ matrix.arch }}
+        run: |
+          set -euo pipefail
+          ./bin/build-image.sh --prepared-context build/docker-context
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push tested platform image under run-specific tags
+        shell: bash
+        env:
+          GHCR_OWNER: ${{ github.repository_owner }}
+          STAGING_TAG: ci-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.arch }}
+        run: |
+          set -euo pipefail
+          ghcr_owner="$(printf '%s' "$GHCR_OWNER" | tr '[:upper:]' '[:lower:]')"
+          for image in "$DOCKERHUB_IMAGE" "ghcr.io/$ghcr_owner/dateninfrastruktur-jenkins"; do
+            docker tag "$IMAGE_NAME" "$image:$STAGING_TAG"
+            docker push "$image:$STAGING_TAG"
+          done
+
+  publish:
+    # No always(): a failed or cancelled architecture must not update release tags.
+    needs: [prepare, build]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out image repository
+        uses: actions/checkout@v4
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish and verify both multi-platform tags
+        shell: bash
+        env:
+          IMAGE_VERSION: ${{ needs.prepare.outputs.image_version }}
+          GHCR_OWNER: ${{ github.repository_owner }}
+          STAGING_PREFIX: ci-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          ghcr_owner="$(printf '%s' "$GHCR_OWNER" | tr '[:upper:]' '[:lower:]')"
+          python3 bin/publish_multiarch.py \
+            --image "$DOCKERHUB_IMAGE" \
+            --image "ghcr.io/$ghcr_owner/dateninfrastruktur-jenkins" \
+            --version "$IMAGE_VERSION" --staging-prefix "$STAGING_PREFIX"
