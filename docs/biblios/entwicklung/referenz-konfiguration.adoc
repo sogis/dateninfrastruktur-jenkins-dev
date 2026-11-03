@@ -30,7 +30,7 @@ link:https://github.com/sogis/dateninfrastruktur-dev-stack/src/branch/main/docs/
 |fest `dev`
 |fest `working-tree`; read-only Mount nach `/workspace/themenrepo`
 |Kein Commit/Push
-|Default an für Garage; `DATENPORTAL_S3_PUBLISH=false` schaltet ab
+|Default an für Garage; `DATENINFRASTRUKTUR_S3_PUBLISH=false` schaltet ab
 |Produktionsimage mit mitgelieferter JCasC
 |Default `production`
 |fest `managed-git`; `THEMEN_REPO_URL` erforderlich, Branch-Default im Image `main`
@@ -144,7 +144,7 @@ tatsächliche opendata.swiss-Harvester-Anschluss bleibt ausgenommen.
 |`ORG_GRADLE_PROJECT_s3Acl` |`s3Acl` |Optional, Default `private`.
 |===
 
-Die lokalen Garage-Werte und deren `DATENPORTAL_S3_*`-Overrides sind
+Die lokalen Garage-Werte und deren `DATENINFRASTRUKTUR_S3_*`-Overrides sind
 Compose-Konfiguration des Dev-Stacks, keine zusätzlichen Jenkins-Plugin-Felder.
 Die fachliche Upload-Schnittstelle beschreibt das
 link:https://github.com/sogis/dateninfrastruktur-themenrepo/src/branch/main/docs/biblios/s3-upload.adoc[Themenrepo].
@@ -172,9 +172,9 @@ link:https://github.com/sogis/dateninfrastruktur-themenrepo/src/branch/main/docs
 |Default `0`; `1` verwendet ein vorhandenes Bundle. Spart weder Plugin-Installation noch die Host-Extension-Installation und garantiert keinen vollständig netzfreien Jenkins-Start.
 |`GRADLE_JAVA_HOME_17` |Themenrepo-Wrapper
 |Hostskripte setzen fest das aufgelöste Java-17-Home; Image `/opt/java/openjdk17`.
-|`DATENPORTAL_MODELS_DIR` |Publikations-Gradle
+|`DATENINFRASTRUKTUR_MODELS_DIR` |Publikations-Gradle
 |Hoststart setzt `<OFFLINE_BUNDLE_DIR>/models`; Image `/opt/datenportal/offline-bundle/models`. Ohne ENV verwendet die Publikation `shared/models` im Themenrepo.
-|`DATENPORTAL_OFFLINE_JARS_DIR` |Gradle-Initialisierung
+|`DATENINFRASTRUKTUR_OFFLINE_JARS_DIR` |Gradle-Initialisierung
 |Hoststart setzt `<OFFLINE_BUNDLE_DIR>/jars`; Image `/opt/datenportal/offline-bundle/jars`.
 |`GRADLE_USER_HOME` |Gradle
 |Hoststart setzt `<OFFLINE_BUNDLE_DIR>/gradle-user-home`; Image `/opt/datenportal/offline-bundle/gradle-user-home`.

@@ -62,7 +62,7 @@ Der technische Ablauf ist:
 . `shared/Jenkinsfile` startet im Repo-Root `shared/bin/gradlew-java17.sh`.
 . Der Wrapper liest seine Distribution unter
   `GRADLE_USER_HOME/wrapper/dists`.
-. `shared/gradle/init.gradle` bindet `DATENPORTAL_OFFLINE_JARS_DIR` fuer
+. `shared/gradle/init.gradle` bindet `DATENINFRASTRUKTUR_OFFLINE_JARS_DIR` fuer
   Plugin- und Abhaengigkeitsauflosung ein.
 
 == Source of Truth fuer Koordinaten
@@ -80,7 +80,7 @@ Ein typischer Offline-Test besteht aus zwei Schritten:
 
 . Bundle hier neu bauen.
 . Den Themenrepo-Wrapper mit `GRADLE_USER_HOME` und
-  `DATENPORTAL_OFFLINE_JARS_DIR` gegen dieses Bundle starten.
+  `DATENINFRASTRUKTUR_OFFLINE_JARS_DIR` gegen dieses Bundle starten.
 
 Die fachliche und build-seitige Verifikation des Wrapper-Vertrags ist im
 Themenrepo dokumentiert.
@@ -103,7 +103,7 @@ Das Runtime-Themenrepo wird erst über `THEMEN_REPO_URL` und
 Themenrepo. Die drei INTERLIS-Modelle werden von der dort festgelegten Revision
 mit SHA-256-Prüfung nach `build/offline-bundle/models/` geladen. Eine Modelländerung
 muss Manifest, SQL-Abbildung und Roundtrip-Tests gemeinsam aktualisieren.
-Das Image exportiert `DATENPORTAL_MODELS_DIR=/opt/datenportal/offline-bundle/models`.
+Das Image exportiert `DATENINFRASTRUKTUR_MODELS_DIR=/opt/datenportal/offline-bundle/models`.
 
 ili2duckdb wertet `DUCKDB_EXTENSION_DIRECTORY` nicht selbst aus. Deshalb macht
 `configure-duckdb-extensions.sh` die installierten Extensions zusätzlich unter

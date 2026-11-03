@@ -55,10 +55,10 @@ def configureMavenRepository = { RepositoryHandler repositoryHandler, String rep
 }
 
 def buildProperties = buildCoordinatesFile.isFile() ? loadProperties(buildCoordinatesFile) : new Properties()
-def repositoryUrls = (readIndexedProperties(buildProperties, 'datenportal.repository.plugin.')
-        + readIndexedProperties(buildProperties, 'datenportal.repository.project.'))
+def repositoryUrls = (readIndexedProperties(buildProperties, 'dateninfrastruktur.repository.plugin.')
+        + readIndexedProperties(buildProperties, 'dateninfrastruktur.repository.project.'))
         .unique()
-def requestedRuntimeDependencies = readIndexedProperties(buildProperties, 'datenportal.offline.seed.')
+def requestedRuntimeDependencies = readIndexedProperties(buildProperties, 'dateninfrastruktur.offline.seed.')
         .collect { normalizeJarDependencyNotation(it) }
         .findAll { it != null }
 

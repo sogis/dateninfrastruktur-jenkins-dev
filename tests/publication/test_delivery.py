@@ -168,7 +168,7 @@ gradle.projectsEvaluated {
         databaseFile new File(p.buildDir,'publication/publication.duckdb')
         schema 'offices'
         modelNames 'SO_AGI_DataCatalog_Base_20260529'
-        modelDirectories System.getenv('DATENPORTAL_MODELS_DIR')
+        modelDirectories System.getenv('DATENINFRASTRUKTUR_MODELS_DIR')
         dataFiles '/test/offices-roundtrip.xtf'
     }
     p.tasks.named('commitAndPushMetadata') { dependsOn task }

@@ -98,7 +98,7 @@ if [ ! -f "$THEMEN_REPO_DIR/shared/gradle/gradle-build.properties" ]; then
   exit 1
 fi
 
-GRETL_VERSION="${GRETL_VERSION:-$(awk -F= '$1 == "datenportal.plugin.gretl.version" {print $2}' "$THEMEN_REPO_DIR/shared/gradle/gradle-build.properties" | tr -d '[:space:]')}"
+GRETL_VERSION="${GRETL_VERSION:-$(awk -F= '$1 == "dateninfrastruktur.plugin.gretl.version" {print $2}' "$THEMEN_REPO_DIR/shared/gradle/gradle-build.properties" | tr -d '[:space:]')}"
 GRETL_VERSION="${GRETL_VERSION:-unknown}"
 THEMEN_REPO_REVISION="${THEMEN_REPO_REVISION:-$(git -C "$THEMEN_REPO_DIR" rev-parse HEAD 2>/dev/null || printf 'unknown')}"
 PLUGIN_REPO_REVISION="${PLUGIN_REPO_REVISION:-$(git -C "$PLUGIN_REPO" rev-parse HEAD 2>/dev/null || printf 'unknown')}"

@@ -11,10 +11,10 @@ ARG TEMURIN17_VERSION=17.0.15+6
 
 LABEL org.opencontainers.image.title="dateninfrastruktur-jenkins" \
       org.opencontainers.image.version="${IMAGE_VERSION}" \
-      io.datenportal.plugin.version="${PLUGIN_VERSION}" \
-      io.datenportal.gretl.version="${GRETL_VERSION}" \
-      io.datenportal.themenrepo.revision="${THEMEN_REPO_REVISION}" \
-      io.datenportal.plugin.revision="${PLUGIN_REPO_REVISION}"
+      io.dateninfrastruktur.plugin.version="${PLUGIN_VERSION}" \
+      io.dateninfrastruktur.gretl.version="${GRETL_VERSION}" \
+      io.dateninfrastruktur.themenrepo.revision="${THEMEN_REPO_REVISION}" \
+      io.dateninfrastruktur.plugin.revision="${PLUGIN_REPO_REVISION}"
 
 USER root
 
@@ -71,8 +71,8 @@ ENV CASC_JENKINS_CONFIG=/usr/share/jenkins/ref/casc_configs/jenkins.yaml \
     JENKINS_RUNTIME_MODE=production \
     THEMEN_REPO_MODE=managed-git \
     THEMEN_REPO_BRANCH=main \
-    DATENPORTAL_MODELS_DIR=/opt/datenportal/offline-bundle/models \
-    DATENPORTAL_OFFLINE_JARS_DIR=/opt/datenportal/offline-bundle/jars \
+    DATENINFRASTRUKTUR_MODELS_DIR=/opt/datenportal/offline-bundle/models \
+    DATENINFRASTRUKTUR_OFFLINE_JARS_DIR=/opt/datenportal/offline-bundle/jars \
     GRADLE_USER_HOME=/opt/datenportal/offline-bundle/gradle-user-home \
     GRADLE_JAVA_HOME_17=/opt/java/openjdk17 \
     JENKINS_JAVA_OPTS=-Djenkins.install.runSetupWizard=false

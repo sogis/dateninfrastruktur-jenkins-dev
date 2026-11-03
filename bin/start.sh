@@ -91,11 +91,11 @@ export THEMEN_REPO_MODE
 export THEMEN_REPO_URL
 export THEMEN_REPO_PATH
 export THEMEN_REPO_BRANCH
-export DATENPORTAL_MODELS_DIR="$OFFLINE_BUNDLE_DIR/models"
-export DATENPORTAL_OFFLINE_JARS_DIR="$OFFLINE_BUNDLE_DIR/jars"
+export DATENINFRASTRUKTUR_MODELS_DIR="$OFFLINE_BUNDLE_DIR/models"
+export DATENINFRASTRUKTUR_OFFLINE_JARS_DIR="$OFFLINE_BUNDLE_DIR/jars"
 export GRADLE_USER_HOME="$OFFLINE_BUNDLE_DIR/gradle-user-home"
 export DUCKDB_EXTENSION_DIRECTORY="${DUCKDB_EXTENSION_DIRECTORY:-$ROOT_DIR/build/duckdb-extensions-host}"
-"$JAVA17_HOME/bin/java" -cp "$DATENPORTAL_OFFLINE_JARS_DIR/*" \
+"$JAVA17_HOME/bin/java" -cp "$DATENINFRASTRUKTUR_OFFLINE_JARS_DIR/*" \
   ch.so.agi.gretl.internal.duckdb.DuckDbExtensionInstaller postgres spatial excel httpfs s3
 "$ROOT_DIR/bin/configure-duckdb-extensions.sh"
 
@@ -117,7 +117,7 @@ echo "Repo mode:   $THEMEN_REPO_MODE"
 echo "Themes repo: $THEMEN_REPO_URL"
 echo "Repo path:   $THEMEN_REPO_PATH"
 echo "Branch:      $THEMEN_REPO_BRANCH"
-echo "Offline jars: $DATENPORTAL_OFFLINE_JARS_DIR"
+echo "Offline jars: $DATENINFRASTRUKTUR_OFFLINE_JARS_DIR"
 echo "Gradle home:  $GRADLE_USER_HOME"
 echo "Gradle Java:  $GRADLE_JAVA_HOME_17"
 echo "Jenkins Java: $JAVA_HOME"

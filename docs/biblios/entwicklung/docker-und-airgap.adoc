@@ -228,7 +228,7 @@ Anmeldung oder Lieferverarbeitung mit diesen externen Diensten.
 Der eigentliche Offline-Vertrag bleibt dabei:
 
 * Gradle-Distribution aus `GRADLE_USER_HOME`
-* Plugin- und Runtime-Jars aus `DATENPORTAL_OFFLINE_JARS_DIR`
+* Plugin- und Runtime-Jars aus `DATENINFRASTRUKTUR_OFFLINE_JARS_DIR`
 * native DuckDB-Extensions aus `DUCKDB_EXTENSION_DIRECTORY`
 
 == Weiterfuehrend
