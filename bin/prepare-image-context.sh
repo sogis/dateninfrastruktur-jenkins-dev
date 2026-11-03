@@ -8,7 +8,7 @@ PLUGIN_REPO="${PLUGIN_REPO:-$ROOT_DIR/../dateninfrastruktur-jenkins-gretl-plugin
 PLUGIN_HPI_SOURCE="${PLUGIN_HPI_SOURCE:-}"
 PLUGIN_SOURCE="${PLUGIN_SOURCE:-local}"
 PLUGIN_GROUP="${PLUGIN_GROUP:-ch.so.agi.jenkins}"
-PLUGIN_ARTIFACT="${PLUGIN_ARTIFACT:-jenkins-gretl-datenportal-plugin}"
+PLUGIN_ARTIFACT="${PLUGIN_ARTIFACT:-jenkins-gretl-dateninfrastruktur-plugin}"
 PLUGIN_VERSION="${PLUGIN_VERSION:-0.1.0-SNAPSHOT}"
 PLUGIN_REPOSITORY_URL="${PLUGIN_REPOSITORY_URL:-https://jars.interlis.guru/snapshots}"
 MAVEN_REPO_LOCAL="${MAVEN_REPO_LOCAL:-${HOME}/.m2/repository}"
@@ -113,7 +113,7 @@ cp "$ROOT_DIR/plugins.txt" "$DOCKER_CONTEXT_DIR/plugins.txt"
 cp "$ROOT_DIR/casc/jenkins-production.yaml" "$DOCKER_CONTEXT_DIR/jenkins.yaml"
 cp "$ROOT_DIR/bin/configure-duckdb-extensions.sh" "$DOCKER_CONTEXT_DIR/configure-duckdb-extensions.sh"
 cp "$ROOT_DIR/docker-entrypoint.sh" "$DOCKER_CONTEXT_DIR/docker-entrypoint.sh"
-cp "$PLUGIN_HPI_SOURCE" "$DOCKER_CONTEXT_DIR/jenkins-gretl-datenportal-plugin.jpi"
+cp "$PLUGIN_HPI_SOURCE" "$DOCKER_CONTEXT_DIR/jenkins-gretl-dateninfrastruktur-plugin.jpi"
 rsync -a --delete \
   --exclude '.DS_Store' \
   "$OFFLINE_BUNDLE_DIR/" "$DOCKER_CONTEXT_DIR/offline-bundle/"

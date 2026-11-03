@@ -66,7 +66,7 @@ Der Image-Build staged:
 * `casc/jenkins-production.yaml` als `jenkins.yaml`
 * das vorbereitete Offline-Bundle
 * das aus `PLUGIN_SOURCE` aufgeloeste
-  `jenkins-gretl-datenportal-plugin.hpi`
+  `jenkins-gretl-dateninfrastruktur-plugin.hpi`
 * das EntryPoint-Skript
 
 Das Themenrepo wird bewusst nicht in das Image kopiert. `THEMEN_REPO_DIR` ist

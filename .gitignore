@@ -48,7 +48,8 @@ nohup.out
 __MACOSX/
 .AppleDouble
 .LSOverride
-Icon[]
+Icon[
+]
 
 # Thumbnails
 ._*
@@ -125,7 +126,7 @@ jenkins-home/plugins/*.bak
 jenkins-home/queue.xml
 jenkins-home/queue.xml.bak
 jenkins-home/users/
-jenkins-home/plugins/jenkins-gretl-datenportal-plugin/
+jenkins-home/plugins/jenkins-gretl-dateninfrastruktur-plugin/
 
 # Never copy runtime Jenkins state into the new repository.
 jenkins-home/

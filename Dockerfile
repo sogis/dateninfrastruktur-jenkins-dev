@@ -48,7 +48,7 @@ COPY --chown=jenkins:jenkins jenkins.yaml /usr/share/jenkins/ref/casc_configs/je
 COPY --chown=root:root configure-duckdb-extensions.sh /usr/local/bin/configure-duckdb-extensions.sh
 COPY --chown=root:root docker-entrypoint.sh /usr/local/bin/datenportal-jenkins-entrypoint.sh
 COPY --chown=jenkins:jenkins offline-bundle/ /opt/datenportal/offline-bundle/
-COPY --chown=jenkins:jenkins jenkins-gretl-datenportal-plugin.jpi /usr/share/jenkins/ref/plugins/jenkins-gretl-datenportal-plugin.jpi
+COPY --chown=jenkins:jenkins jenkins-gretl-dateninfrastruktur-plugin.jpi /usr/share/jenkins/ref/plugins/jenkins-gretl-dateninfrastruktur-plugin.jpi
 
 RUN chmod 0755 /usr/local/bin/datenportal-jenkins-entrypoint.sh /usr/local/bin/configure-duckdb-extensions.sh \
     && mkdir -p "${DUCKDB_EXTENSION_DIRECTORY}" \

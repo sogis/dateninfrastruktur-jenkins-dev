@@ -71,7 +71,7 @@ export PATH="$JAVA_HOME/bin:$PATH"
 mvn -ntp package
 
 cd ../dateninfrastruktur-jenkins-dev
-./bin/install-gretl-datenportal-plugin.sh
+./bin/install-gretl-dateninfrastruktur-plugin.sh
 ```
 
 Wenn Jenkins bereits laeuft, ist anschliessend ein voller Restart noetig.

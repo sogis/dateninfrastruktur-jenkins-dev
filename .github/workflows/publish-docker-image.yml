@@ -18,7 +18,7 @@ env:
   IMAGE_NAME: dateninfrastruktur-jenkins:ci
   DOCKERHUB_IMAGE: sogis/dateninfrastruktur-jenkins
   PLUGIN_GROUP: ch.so.agi.jenkins
-  PLUGIN_ARTIFACT: jenkins-gretl-datenportal-plugin
+  PLUGIN_ARTIFACT: jenkins-gretl-dateninfrastruktur-plugin
   THEMEN_REPO_URL: https://github.com/sogis/dateninfrastruktur-themenrepo.git
   THEMEN_REPO_DIR: ${{ github.workspace }}/themenrepo
 

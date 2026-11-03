@@ -5,13 +5,18 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 DEFAULT_JENKINS_DEV_HOME="$(cd "$SCRIPT_DIR/.." && pwd)"
 JENKINS_DEV_HOME="${JENKINS_DEV_HOME:-$DEFAULT_JENKINS_DEV_HOME}"
 PLUGIN_REPO="${PLUGIN_REPO:-$DEFAULT_JENKINS_DEV_HOME/../dateninfrastruktur-jenkins-gretl-plugin}"
-HPI_SOURCE="${1:-$PLUGIN_REPO/target/jenkins-gretl-datenportal-plugin.hpi}"
+HPI_SOURCE="${1:-$PLUGIN_REPO/target/jenkins-gretl-dateninfrastruktur-plugin.hpi}"
 
 JENKINS_HOME_DIR="${JENKINS_HOME_DIR:-${JENKINS_HOME:-$JENKINS_DEV_HOME/jenkins-home}}"
 PLUGINS_DIR="$JENKINS_HOME_DIR/plugins"
-PLUGIN_TARGET="$PLUGINS_DIR/jenkins-gretl-datenportal-plugin.jpi"
-PLUGIN_LEGACY_TARGET="$PLUGINS_DIR/jenkins-gretl-datenportal-plugin.hpi"
-PLUGIN_EXPLODED_DIR="$PLUGINS_DIR/jenkins-gretl-datenportal-plugin"
+PLUGIN_TARGET="$PLUGINS_DIR/jenkins-gretl-dateninfrastruktur-plugin.jpi"
+PLUGIN_LEGACY_TARGET="$PLUGINS_DIR/jenkins-gretl-dateninfrastruktur-plugin.hpi"
+PLUGIN_EXPLODED_DIR="$PLUGINS_DIR/jenkins-gretl-dateninfrastruktur-plugin"
+SUPERSEDED_PLUGIN_FILES=(
+  "$PLUGINS_DIR/jenkins-gretl-datenportal-plugin.jpi"
+  "$PLUGINS_DIR/jenkins-gretl-datenportal-plugin.hpi"
+)
+SUPERSEDED_PLUGIN_DIR="$PLUGINS_DIR/jenkins-gretl-datenportal-plugin"
 PORT="${JENKINS_PORT:-8080}"
 
 format_mtime() {
@@ -76,6 +81,10 @@ fi
 cp "$HPI_SOURCE" "$PLUGIN_TARGET"
 rm -f "$PLUGIN_LEGACY_TARGET"
 rm -rf "$PLUGIN_EXPLODED_DIR"
+for superseded in "${SUPERSEDED_PLUGIN_FILES[@]}"; do
+  rm -f "$superseded"
+done
+rm -rf "$SUPERSEDED_PLUGIN_DIR"
 
 echo "Installed GRETL Datenportal plugin:"
 print_file_details "Source HPI" "$HPI_SOURCE"

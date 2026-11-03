@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 FRESH_JENKINS_HOME_DIR="${FRESH_JENKINS_HOME_DIR:-$ROOT_DIR/build/jenkins-home-fresh}"
 PLUGIN_REPO="${PLUGIN_REPO:-$ROOT_DIR/../dateninfrastruktur-jenkins-gretl-plugin}"
-PLUGIN_HPI_SOURCE="${PLUGIN_HPI_SOURCE:-$PLUGIN_REPO/target/jenkins-gretl-datenportal-plugin.hpi}"
+PLUGIN_HPI_SOURCE="${PLUGIN_HPI_SOURCE:-$PLUGIN_REPO/target/jenkins-gretl-dateninfrastruktur-plugin.hpi}"
 
 case "$FRESH_JENKINS_HOME_DIR" in
   "$ROOT_DIR/build"/*)
@@ -25,7 +25,7 @@ rm -rf "$FRESH_JENKINS_HOME_DIR"
 mkdir -p "$(dirname "$FRESH_JENKINS_HOME_DIR")"
 
 mkdir -p "$FRESH_JENKINS_HOME_DIR/plugins"
-cp "$PLUGIN_HPI_SOURCE" "$FRESH_JENKINS_HOME_DIR/plugins/jenkins-gretl-datenportal-plugin.jpi"
+cp "$PLUGIN_HPI_SOURCE" "$FRESH_JENKINS_HOME_DIR/plugins/jenkins-gretl-dateninfrastruktur-plugin.jpi"
 echo "Plugin-HPI fuer Fresh-Start installiert: $PLUGIN_HPI_SOURCE"
 
 export JENKINS_HOME_DIR="$FRESH_JENKINS_HOME_DIR"

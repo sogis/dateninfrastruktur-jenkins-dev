@@ -205,9 +205,9 @@ Image-Build-Variable ändert kein bereits laufendes Jenkins.
 |`PLUGIN_REPO` |Image-Build, Installation, Fresh-Start
 |Default Schwester-Repo `../dateninfrastruktur-jenkins-gretl-plugin`; beim Installationsskript relativ zu `JENKINS_DEV_HOME`.
 |`PLUGIN_HPI_SOURCE` |Image-Build, Fresh-Start
-|Image-Build: leer, expliziter Pfad umgeht die Quellenauswahl. Fresh-Start: `<PLUGIN_REPO>/target/jenkins-gretl-datenportal-plugin.hpi`, muss bereits existieren. Das Installationsskript erhält einen abweichenden HPI-Pfad als erstes Positionsargument.
+|Image-Build: leer, expliziter Pfad umgeht die Quellenauswahl. Fresh-Start: `<PLUGIN_REPO>/target/jenkins-gretl-dateninfrastruktur-plugin.hpi`, muss bereits existieren. Das Installationsskript erhält einen abweichenden HPI-Pfad als erstes Positionsargument.
 |`PLUGIN_GROUP`, `PLUGIN_ARTIFACT`, `PLUGIN_VERSION` |Image-Build/Maven-Auflösung
-|`ch.so.agi.jenkins`, `jenkins-gretl-datenportal-plugin`, `0.1.0-SNAPSHOT`. Die Version wird auch als Image-Label verwendet.
+|`ch.so.agi.jenkins`, `jenkins-gretl-dateninfrastruktur-plugin`, `0.1.0-SNAPSHOT`. Die Version wird auch als Image-Label verwendet.
 |`PLUGIN_REPOSITORY_URL`, `MAVEN_REPO_LOCAL` |Image-Build/Maven-Auflösung
 |`https://jars.interlis.guru/snapshots` und `$HOME/.m2/repository`.
 |`GRETL_VERSION` |Image-Build

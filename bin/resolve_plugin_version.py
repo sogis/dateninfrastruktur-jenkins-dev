@@ -17,7 +17,7 @@ from typing import Callable, Iterable, List, Optional, Tuple
 
 
 GROUP = "ch.so.agi.jenkins"
-ARTIFACT = "jenkins-gretl-datenportal-plugin"
+ARTIFACT = "jenkins-gretl-dateninfrastruktur-plugin"
 REPOSITORIES = (
     ("releases", "https://jars.interlis.guru/releases"),
     ("snapshots", "https://jars.interlis.guru/snapshots"),

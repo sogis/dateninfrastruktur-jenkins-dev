@@ -18,13 +18,13 @@ mvn -ntp package
 
 Das Ergebnis ist:
 
-* `../dateninfrastruktur-jenkins-gretl-plugin/target/jenkins-gretl-datenportal-plugin.hpi`
+* `../dateninfrastruktur-jenkins-gretl-plugin/target/jenkins-gretl-dateninfrastruktur-plugin.hpi`
 
 == Plugin lokal installieren
 
 ```bash
 cd ../dateninfrastruktur-jenkins-dev
-./bin/install-gretl-datenportal-plugin.sh
+./bin/install-gretl-dateninfrastruktur-plugin.sh
 ```
 
 Das Skript:
@@ -57,7 +57,7 @@ Für den schnellen Loop nach einer reinen Plugin-Änderung:
 
 [source,bash]
 ----
-./bin/install-gretl-datenportal-plugin.sh
+./bin/install-gretl-dateninfrastruktur-plugin.sh
 SKIP_OFFLINE_BUNDLE=1 JENKINS_HOME_DIR="$JENKINS_HOME_DIR" ./bin/start.sh
 ----
 
@@ -84,7 +84,7 @@ export PATH="$JAVA_HOME/bin:$PATH"
 mvn -ntp package
 
 cd ../dateninfrastruktur-jenkins-dev
-./bin/install-gretl-datenportal-plugin.sh
+./bin/install-gretl-dateninfrastruktur-plugin.sh
 ./bin/start.sh
 ```
 
