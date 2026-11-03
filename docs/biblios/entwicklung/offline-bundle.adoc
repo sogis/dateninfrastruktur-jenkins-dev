@@ -15,7 +15,7 @@ Der Bundle-Bau gehoert bewusst in dieses Repo, nicht ins Themenrepo.
 == Bundle bauen
 
 ```bash
-cd ../datenportal-jenkins-dev
+cd ../dateninfrastruktur-jenkins-dev
 ./bin/build-offline-bundle.sh
 ```
 
@@ -93,9 +93,9 @@ Das Runtime-Themenrepo wird erst über `THEMEN_REPO_URL` und
 == Weiterfuehrend
 
 * Gradle-Build-Vertrag und Offline-Koordinaten:
-  link:https://codeberg.org/edigonzales/datenportal-themenrepo[datenportal-themenrepo]
+  link:https://github.com/sogis/dateninfrastruktur-themenrepo[dateninfrastruktur-themenrepo]
 * Pipeline- und Job-Logik, die dieses Bundle verbraucht:
-  link:https://codeberg.org/edigonzales/datenportal-jenkins-gretl-plugin[datenportal-jenkins-gretl-plugin]
+  link:https://github.com/sogis/dateninfrastruktur-jenkins-gretl-plugin[dateninfrastruktur-jenkins-gretl-plugin]
 
 == Gepinnte Publikationsmodelle
 
@@ -120,12 +120,12 @@ Die vollständige Vorbereitung und aufeinanderfolgende Lieferungen prüft:
 python3 -m venv build/publication-test-venv
 . build/publication-test-venv/bin/activate
 pip install -r tests/publication/requirements.txt
-./bin/test-image-publication.sh datenportal-jenkins:local
+./bin/test-image-publication.sh dateninfrastruktur-jenkins:local
 ----
 
 Der Test benötigt Docker, Python 3 mit den fest versionierten
 Testabhängigkeiten (RDFLib und pyparsing) sowie die Schwester-Repositories
-`datenportal-themenrepo` und `datenportal-pilot-daten`. Abweichende Pfade können
+`dateninfrastruktur-themenrepo` und einen externen Fixture-Checkout (`PILOT_REPO_DIR`). Abweichende Pfade können
 über `THEMEN_REPO_DIR` und `PILOT_REPO_DIR` gesetzt werden. Alle GRETL-Prozesse
 laufen im tatsächlichen Image mit `--network none`. Die temporäre DuckDB liegt
 auf dem nativen Container-Dateisystem; nur fertige Artefakte werden auf den Host

@@ -22,7 +22,7 @@ Produktionskonfiguration.
 == Standardstart
 
 ```bash
-cd ../datenportal-jenkins-dev
+cd ../dateninfrastruktur-jenkins-dev
 ./bin/start.sh
 ```
 
@@ -59,7 +59,7 @@ THEMEN_REPO_MODE=managed-git THEMEN_REPO_BRANCH=main \
 
 Ohne gesetzte `THEMEN_REPO_URL` verwendet das Skript `file://` auf das lokale
 Schwester-Repository. Eine bereits exportierte URL hat Vorrang. Der Default von
-`THEMEN_REPO_DIR` ist `../datenportal-themenrepo`; das Skript leitet eine absolute
+`THEMEN_REPO_DIR` ist `../dateninfrastruktur-themenrepo`; das Skript leitet eine absolute
 `file://`-URL daraus ab. Nur eingecheckte Änderungen auf dem gewählten Branch werden
 verwendet. Ein HTTPS-Repository kann ausdrücklich über `THEMEN_REPO_URL` gewählt
 werden; auch bei dieser Quelle bleibt der Hoststart eine Dev-Laufzeit.
@@ -79,7 +79,7 @@ externe Repo noch der Seeder-Snapshot werden verändert. Der Shellstart
 aktiviert S3 nicht selbst. Mit separat freigegebenem `s3Publish=true` kann aber
 auch dieser Modus nach S3 publizieren; der nächste Lauf liest dann dessen neuen
 Gesamtstand. Für die vollständige lokale Integration mit Garage siehe
-link:https://codeberg.org/edigonzales/datenportal-dev-stack/src/branch/main/docs/biblios/inbetriebnahme.adoc[Stack-Inbetriebnahme].
+link:https://github.com/sogis/dateninfrastruktur-dev-stack/src/branch/main/docs/biblios/inbetriebnahme.adoc[Stack-Inbetriebnahme].
 
 Für eine neue ENV-Konfiguration den Hostprozess beenden und erneut starten.
 Nach Änderungen an Repository-Modus, URL oder Branch auch den Seeder erneut
@@ -182,8 +182,8 @@ gehoert die strukturierte Erklaerung ins Themenrepo.
 == Weiterfuehrend
 
 * Die Organisations- und Datensatzstruktur ist im Repo
-  link:https://codeberg.org/edigonzales/datenportal-themenrepo[datenportal-themenrepo]
+  link:https://github.com/sogis/dateninfrastruktur-themenrepo[dateninfrastruktur-themenrepo]
   beschrieben.
 * Die Logik hinter Seed-Job, Scanner und generierten Jobs ist im Repo
-  link:https://codeberg.org/edigonzales/datenportal-jenkins-gretl-plugin[datenportal-jenkins-gretl-plugin]
+  link:https://github.com/sogis/dateninfrastruktur-jenkins-gretl-plugin[dateninfrastruktur-jenkins-gretl-plugin]
   beschrieben.

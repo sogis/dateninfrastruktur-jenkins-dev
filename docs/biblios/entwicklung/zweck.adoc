@@ -7,7 +7,7 @@ toc::[]
 
 == Rolle im Gesamtsystem
 
-`datenportal-jenkins-dev` ist das Betriebs- und Integrationsrepo fuer lokale
+`dateninfrastruktur-jenkins-dev` ist das Betriebs- und Integrationsrepo fuer lokale
 Entwicklung. Es stellt einen reproduzierbaren Jenkins-Controller bereit, baut
 das benoetigte Offline-Bundle und koppelt das Themenrepo mit dem Jenkins-Plugin
 zu einer testbaren Gesamtumgebung.
@@ -32,15 +32,15 @@ Themenrepo erst durch die Runtime-Konfiguration.
 |===
 | Repository | Rolle | Gehoert hierher?
 
-| `datenportal-jenkins-dev`
+| `dateninfrastruktur-jenkins-dev`
 | lokaler Jenkins, JCasC, Offline-Bundle, Docker-Image, Plugin-Installationsloop
 | Ja
 
-| `datenportal-themenrepo`
+| `dateninfrastruktur-themenrepo`
 | Organisationsstruktur, Datensaetze, Shared Defaults, Gradle-Build-Vertrag
 | Nein
 
-| `datenportal-jenkins-gretl-plugin`
+| `dateninfrastruktur-jenkins-gretl-plugin`
 | Scanner, Startformular, Berechtigungen, Seed-Builder, Job-Generierung
 | Nein
 |===
@@ -59,6 +59,6 @@ plugin-interne Regeln:
 == Weiterfuehrend
 
 * Fachlicher Vertrag:
-  link:https://codeberg.org/edigonzales/datenportal-themenrepo[datenportal-themenrepo]
+  link:https://github.com/sogis/dateninfrastruktur-themenrepo[dateninfrastruktur-themenrepo]
 * Plugin-Implementierung:
-  link:https://codeberg.org/edigonzales/datenportal-jenkins-gretl-plugin[datenportal-jenkins-gretl-plugin]
+  link:https://github.com/sogis/dateninfrastruktur-jenkins-gretl-plugin[dateninfrastruktur-jenkins-gretl-plugin]

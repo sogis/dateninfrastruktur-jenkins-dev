@@ -10,7 +10,7 @@ toc::[]
 Das Jenkins-Plugin wird im Schwester-Repo gebaut:
 
 ```bash
-cd ../datenportal-jenkins-gretl-plugin
+cd ../dateninfrastruktur-jenkins-gretl-plugin
 export JAVA_HOME="${JAVA21_HOME:-$HOME/.sdkman/candidates/java/current}"
 export PATH="$JAVA_HOME/bin:$PATH"
 mvn -ntp package
@@ -18,12 +18,12 @@ mvn -ntp package
 
 Das Ergebnis ist:
 
-* `../datenportal-jenkins-gretl-plugin/target/jenkins-gretl-datenportal-plugin.hpi`
+* `../dateninfrastruktur-jenkins-gretl-plugin/target/jenkins-gretl-datenportal-plugin.hpi`
 
 == Plugin lokal installieren
 
 ```bash
-cd ../datenportal-jenkins-dev
+cd ../dateninfrastruktur-jenkins-dev
 ./bin/install-gretl-datenportal-plugin.sh
 ```
 
@@ -48,7 +48,7 @@ vollen Restart neu geladen.
 Pflichtablauf nach Plugin-Aenderungen:
 
 . Plugin-HPI neu bauen.
-. HPI in `datenportal-jenkins-dev` installieren.
+. HPI in `dateninfrastruktur-jenkins-dev` installieren.
 . Jenkins komplett neu starten.
 . Seed-Job erneut ausfuehren.
 . Datenportal-UI und einen generierten Job testen.
@@ -71,19 +71,19 @@ Jelly-Views neu geladen werden. Für ein isoliertes Home:
 ----
 
 Der Fresh-Start setzt eine zuvor gebaute HPI unter
-`../datenportal-jenkins-gretl-plugin/target/` voraus. Das Skript kopiert diese
+`../dateninfrastruktur-jenkins-gretl-plugin/target/` voraus. Das Skript kopiert diese
 automatisch in das neue Home. Ein anderer Build kann mit
 `PLUGIN_HPI_SOURCE=/pfad/zur/plugin.hpi` angegeben werden.
 
 == Typischer End-to-End-Loop
 
 ```bash
-cd ../datenportal-jenkins-gretl-plugin
+cd ../dateninfrastruktur-jenkins-gretl-plugin
 export JAVA_HOME="${JAVA21_HOME:-$HOME/.sdkman/candidates/java/current}"
 export PATH="$JAVA_HOME/bin:$PATH"
 mvn -ntp package
 
-cd ../datenportal-jenkins-dev
+cd ../dateninfrastruktur-jenkins-dev
 ./bin/install-gretl-datenportal-plugin.sh
 ./bin/start.sh
 ```
@@ -100,6 +100,6 @@ Danach in Jenkins:
 == Weiterfuehrend
 
 * Plugin-Implementierung und fachliche Render-/Validierungslogik:
-  link:https://codeberg.org/edigonzales/datenportal-jenkins-gretl-plugin[datenportal-jenkins-gretl-plugin]
+  link:https://github.com/sogis/dateninfrastruktur-jenkins-gretl-plugin[dateninfrastruktur-jenkins-gretl-plugin]
 * Themenrepo-Vertrag fuer Organisationen, Datensaetze und Defaults:
-  link:https://codeberg.org/edigonzales/datenportal-themenrepo[datenportal-themenrepo]
+  link:https://github.com/sogis/dateninfrastruktur-themenrepo[dateninfrastruktur-themenrepo]

@@ -17,15 +17,15 @@ Hierher gehoeren:
 Nicht hierher gehoeren:
 
 - der fachliche Vertrag des Themenrepos:
-  [datenportal-themenrepo](https://github.com/sogis/dateninfrastruktur-themenrepo)
+  [dateninfrastruktur-themenrepo](https://github.com/sogis/dateninfrastruktur-themenrepo)
 - die Implementierung des Jenkins-Plugins:
-  [datenportal-jenkins-gretl-plugin](https://codeberg.org/edigonzales/datenportal-jenkins-gretl-plugin)
+  [dateninfrastruktur-jenkins-gretl-plugin](https://github.com/sogis/dateninfrastruktur-jenkins-gretl-plugin)
 
 ## Zentrale Workflows
 
 Die folgenden Befehle betreffen den separaten Shellstart von Jenkins. Für das
 Gesamtsystem mit Garage, Editor und Portal gilt die
-[Dev-Stack-Inbetriebnahme](https://codeberg.org/edigonzales/datenportal-dev-stack/src/branch/main/docs/biblios/inbetriebnahme.adoc).
+[Dev-Stack-Inbetriebnahme](https://github.com/sogis/dateninfrastruktur-dev-stack/src/branch/main/docs/biblios/inbetriebnahme.adoc).
 Dort bereitet `scripts/up.sh` den Stack vollständig vor, einschliesslich
 erfolgreichem Seed, lokaler Erstpublikation und Portalstart. Die gemeinsame
 Stack-Test-JCasC liegt im Dev-Stack; dieser Jenkins-Quellcheckout ist dort nur
@@ -37,7 +37,7 @@ zusätzliche S3-Freigabe Vorschau.
 ### Jenkins lokal starten
 
 ```bash
-cd ../datenportal-jenkins-dev
+cd ../dateninfrastruktur-jenkins-dev
 ./bin/start.sh
 ```
 
@@ -49,28 +49,28 @@ Das vorhandene Home wird dabei wiederverwendet. Fuer einen isolierten Neustart
 mit leerer Konfiguration:
 
 ```bash
-cd ../datenportal-jenkins-dev
+cd ../dateninfrastruktur-jenkins-dev
 ./bin/start-fresh.sh
 ```
 
 Das Skript setzt eine zuvor gebaute Plugin-HPI unter
-`../datenportal-jenkins-gretl-plugin/target/` voraus und legt sie automatisch im
+`../dateninfrastruktur-jenkins-gretl-plugin/target/` voraus und legt sie automatisch im
 frischen Home ab. Ein abweichender Build kann mit
 `PLUGIN_HPI_SOURCE=/pfad/zur/plugin.hpi` angegeben werden.
 
-`start-fresh.sh` leert ausschliesslich ein Home unter `build/`; das versionierte
-`jenkins-home/` bleibt erhalten. Ein anderes bestehendes Home kann mit
+`start-fresh.sh` leert ausschliesslich ein Home unter `build/`. Ein getracktes
+Quell-`jenkins-home/` gibt es im Zielrepo nicht; das Laufzeit-Home entsteht neu. Ein anderes bestehendes Home kann mit
 `JENKINS_HOME_DIR=/pfad/zum/home ./bin/start.sh` verwendet werden.
 
 ### Plugin aus dem Schwester-Repo installieren
 
 ```bash
-cd ../datenportal-jenkins-gretl-plugin
+cd ../dateninfrastruktur-jenkins-gretl-plugin
 export JAVA_HOME="${JAVA21_HOME:-$HOME/.sdkman/candidates/java/current}"
 export PATH="$JAVA_HOME/bin:$PATH"
 mvn -ntp package
 
-cd ../datenportal-jenkins-dev
+cd ../dateninfrastruktur-jenkins-dev
 ./bin/install-gretl-datenportal-plugin.sh
 ```
 
@@ -142,7 +142,7 @@ vollständige Anleitung steht in
 ### Offline-Bundle separat bauen
 
 ```bash
-cd ../datenportal-jenkins-dev
+cd ../dateninfrastruktur-jenkins-dev
 ./bin/build-offline-bundle.sh
 ```
 
@@ -151,7 +151,7 @@ Das Bundle landet standardmaessig unter `build/offline-bundle/`.
 ### Docker-Image bauen
 
 ```bash
-cd ../datenportal-jenkins-dev
+cd ../dateninfrastruktur-jenkins-dev
 ./bin/build-image.sh
 ```
 
@@ -173,8 +173,8 @@ Build-Versionen und Labels kommen bei dieser Variante ausschliesslich aus dem
 vorbereiteten Kontext. `IMAGE_NAME` wählt weiterhin den lokalen Zielnamen.
 `THEMEN_REPO_DIR` muss auf den dazugehörigen Themenrepo-Stand für die Tests zeigen.
 
-Das gemeinsame Image heisst `datenportal-jenkins`. Der lokale Default-Tag ist
-`datenportal-jenkins:local`; für die Registry kann `IMAGE_NAME` und
+Das gemeinsame Image heisst `dateninfrastruktur-jenkins`. Der lokale Default-Tag ist
+`dateninfrastruktur-jenkins:local`; für die Registry kann `IMAGE_NAME` und
 `IMAGE_VERSION` gesetzt werden. Es unterstützt die Laufzeitmodi
 `JENKINS_RUNTIME_MODE=dev` und `JENKINS_RUNTIME_MODE=production`. Im
 Produktionsmodus prüft der Entrypoint die AD- und Deployment-Variablen; im
@@ -207,32 +207,20 @@ und Parquet. Die Exporte werden anschliessend inhaltlich geprueft. Der Test
 kann separat wiederholt werden:
 
 ```bash
-./bin/test-image-duckdb.sh datenportal-jenkins:local
+./bin/test-image-duckdb.sh dateninfrastruktur-jenkins:local
 ```
 
-Der Test verwendet `THEMEN_REPO_DIR` (Default `../datenportal-themenrepo`)
+Der Test verwendet `THEMEN_REPO_DIR` (Default `../dateninfrastruktur-themenrepo`)
 fuer Wrapper und Gradle-Initialisierung. Er benoetigt Docker, aber kein
 bestehendes Jenkins-Home. Die technischen Fixtures unter `tests/duckdb` dienen
 ausschliesslich der Laufzeitpruefung; sie definieren keinen Publikationsjob.
 Der lokale Shellstart installiert die Extensions ebenfalls für seine Plattform.
 
-Die Pluginquelle ist konfigurierbar:
-
-* `PLUGIN_SOURCE=local` baut den Checkout unter `PLUGIN_REPO` und installiert
-  dessen HPI;
-* `PLUGIN_SOURCE=maven` löst `PLUGIN_GROUP`, `PLUGIN_ARTIFACT` und
-  `PLUGIN_VERSION` aus `PLUGIN_REPOSITORY_URL` auf;
-* `PLUGIN_SOURCE=auto` bevorzugt den lokalen Checkout und verwendet sonst
-  Maven.
-
-Beispiel für den veröffentlichten Snapshot:
-
-```bash
-PLUGIN_SOURCE=maven \
-PLUGIN_VERSION=0.1.0-SNAPSHOT \
-PLUGIN_REPOSITORY_URL=https://jars.interlis.guru/snapshots \
-./bin/build-image.sh
-```
+Der normale neue Buildpfad ist `PLUGIN_SOURCE=local`: Er baut den Checkout
+unter `PLUGIN_REPO` und installiert dessen HPI. Ein fehlendes lokales
+Plugin-Repo bricht den Build verständlich ab. `PLUGIN_SOURCE=maven` und
+`PLUGIN_SOURCE=auto` bleiben nur als ausdrückliche Kompatibilitätsoptionen
+bestehen; der Stack und der Veröffentlichungsworkflow verwenden `local`.
 
 Das HPI wird ausschliesslich beim Image-Bau installiert. GRETL `5.0.0-SNAPSHOT`
 und die übrigen Gradle-/GRETL-Artefakte werden beim Offline-Bundle-Bau aus den
@@ -246,11 +234,11 @@ Die technische Langform-Doku liegt unter
 
 ## Schwester-Repositories
 
-- [datenportal-themenrepo](https://github.com/sogis/dateninfrastruktur-themenrepo)
+- [dateninfrastruktur-themenrepo](https://github.com/sogis/dateninfrastruktur-themenrepo)
   ist die kanonische Doku fuer Organisationsstruktur, Datensaetze,
   `gretl-datenportal-job.yaml`, `shared/gretl-datenportal-teams.yaml`,
   `shared/Jenkinsfile` und den Gradle-Build-Vertrag.
-- [datenportal-jenkins-gretl-plugin](https://codeberg.org/edigonzales/datenportal-jenkins-gretl-plugin)
+- [dateninfrastruktur-jenkins-gretl-plugin](https://github.com/sogis/dateninfrastruktur-jenkins-gretl-plugin)
   ist die kanonische Doku fuer Scanner, Startformular, Rechtepruefung,
   Seed-Builder und generierte Jenkins-Jobs.
 
@@ -260,14 +248,15 @@ Die technische Langform-Doku liegt unter
 python3 -m venv build/publication-test-venv
 . build/publication-test-venv/bin/activate
 pip install -r tests/publication/requirements.txt
-./bin/test-image-publication.sh datenportal-jenkins:local
+./bin/test-image-publication.sh dateninfrastruktur-jenkins:local
 # Alternativ nach dem Image-Bau automatisch ausführen:
 RUN_PUBLICATION_TESTS=1 ./bin/build-image.sh
 ```
 
-Die Prüfung verwendet die Arbeitsstände der Schwester-Repositories
-`datenportal-themenrepo` und `datenportal-pilot-daten`, eine temporäre Kopie und
-ein separates lokales Bare-Repository. Alle GRETL-Prozesse laufen ohne Netzwerk.
+Die Prüfung verwendet den Arbeitsstand des Themenrepos, einen extern
+bereitzustellenden kompatiblen Fixture-Checkout (`PILOT_REPO_DIR`), eine
+temporäre Kopie und ein separates lokales Bare-Repository. Alle GRETL-Prozesse
+laufen ohne Netzwerk.
 Details zu Modellen, Extensions und Ergebnissen stehen in der
 [Offline-Bundle-Dokumentation](docs/biblios/entwicklung/offline-bundle.adoc).
 
@@ -282,34 +271,36 @@ ein Repository-Datenblatt abgeglichen und optional das Portal neu geladen werden
 Defaults und erforderliche ENV-Werte stehen in der
 [Konfigurationsreferenz](docs/biblios/entwicklung/referenz-konfiguration.adoc).
 
-Der Offline-Test führt keine Git-Schreiboperationen aus. Die ergänzende
-S3-/Git-Integration mit realer Garage und isoliertem Bare-Repository liegt im
-Dev-Stack: `python3 scripts/test-publication.py`.
+Der Offline-Test führt keine Git-Schreiboperationen aus. Die lokale
+S3-Publikation und der Wiederanlauf werden im Dev-Stack über
+`./scripts/verify-foundation.sh` und `./scripts/test-restart.sh` geprüft.
 
-## Multiarch-Veröffentlichung über den GitHub-Mirror
+## Multiarch-Veröffentlichung über GitHub Actions
 
-Codeberg ist das führende Repository. Änderungen an
-`.github/workflows/publish-docker-image.yml` werden dort gepflegt und über den
-Mirror nach GitHub übertragen; GitHub führt die Actions aus.
+Der Workflow `.github/workflows/publish-docker-image.yml` liegt im GitHub-Repo
+`sogis/dateninfrastruktur-jenkins-dev` und ist die aktive Quelle. Es gibt keinen
+Codeberg-Mirror und keine Tag-Strategie: Jeder Push auf `main` sowie ein
+manueller Start veröffentlichen ein neues Image.
 
-Der Workflow behält Pushes auf `main`, Tags `vX.Y.Z` und manuellen Start bei.
-Versionswahl und Secrets bleiben unverändert. Docker Hub und GHCR erhalten
-jeweils denselben Versions-Tag und `latest` für **linux/amd64 und linux/arm64**.
+Docker Hub und GHCR erhalten jeweils den Lauf-Tag `0.1.<run-number>` und
+`latest` für **linux/amd64 und linux/arm64**. Voraussetzungen im
+GitHub-Repository sind die Secrets `DOCKER_USERNAME` und `DOCKER_PASSWORD`
+sowie `GITHUB_TOKEN` mit `packages: write` für GHCR.
 
-1. `prepare` wählt Plugin/Image-Version und Themenrepo-Commit einmal aus und
-   erstellt ein gemeinsames Kontext-Artefakt. Auch ein Snapshot-HPI und das
-   gesamte Offline-Bundle werden nur einmal aufgelöst. Die Tests erhalten
-   einen Git-Export derselben Themenrepo-Revision.
+1. `prepare` baut das Plugin aus dem lokalen Schwester-Repo und erstellt ein
+   gemeinsames Kontext-Artefakt mit Offline-Bundle, Modellen und demselben
+   Themenrepo-Commit für beide Architekturen. Java 21 baut das Plugin, Java 17
+   wird für GRETL/Gradle bereitgestellt.
 2. `build` verwendet native Runner `ubuntu-24.04` und `ubuntu-24.04-arm` mit
    Buildx. Beide bauen mit identischem Kontext, prüfen die Imagearchitektur
-   und führen die DuckDB-Offline-Tests aus. Java 17 und die DuckDB-Extensions
-   werden innerhalb des jeweiligen Zielimages für dessen Architektur installiert.
+   und führen die DuckDB-Offline-Tests aus.
 3. Erfolgreiche Jobs pushen nur Zwischen-Tags
    `ci-<run-id>-<run-attempt>-<arch>` in beide Registries.
 4. `publish` läuft nur nach Erfolg beider Architekturjobs. Es prüft zuerst
    sämtliche Zwischenimages auf Plattform und Digest, erstellt die gemeinsamen
-   Manifeste aus diesen Digests und prüft danach beide Tags in beiden Registries.
-   Bei fehlgeschlagenem Build/Test bleiben Versions-Tag und `latest` unverändert.
+   Manifeste aus diesen Digests und prüft danach den Versions-Tag und `latest`
+   in beiden Registries. Bei fehlgeschlagenem Build/Test bleiben beide Tags
+   unverändert.
 
 Für einen erneuten Versuch **alle Jobs erneut ausführen**, damit beide
 Architekturimages zum gleichen `run-attempt` gehören. Zwischen-Tags können bei
@@ -326,7 +317,4 @@ python3 -m unittest discover -s tests
 
 Sie prüfen unter anderem den Abbruch bei falscher Plattform, das Weiterreichen
 von Testfehlern und die Veröffentlichungssperre bei fehlenden Architekturimages.
-Ein neuer Digest wird erst nach erfolgreichem CI-Lauf in Betreiber-/CRC-Manifeste
-übernommen. Der Workflow baut keine Sodata-Images und führt keine S3-Publikation aus.
-
-Aktueller Nachweis und verbleibende Prüfungen: [Multiarch-Prüfstand](docs/multiarch-validation.md).
+Der Workflow baut keine Sodata-Images und führt keine S3-Publikation aus.

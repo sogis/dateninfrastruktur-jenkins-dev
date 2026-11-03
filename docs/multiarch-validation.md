@@ -1,11 +1,15 @@
 # Multiarch-Prüfstand vom 28. September 2026
 
+> Historischer Prüfstand. Die damaligen Repo-, Registry- und Codeberg-Bezüge
+> sind nicht mehr der aktive Stand. Aktuell ist GitHub die aktive Quelle; jeder
+> Push auf `main` veröffentlicht `0.1.<run-number>` und `latest` über GitHub
+> Actions. Die Secrets heissen `DOCKER_USERNAME` und `DOCKER_PASSWORD`.
+
 ## Ausgangspunkt
 
-Codeberg ist die führende Quelle. Das zuvor saubere lokale Repository wurde
-von `76c581a` per Fast-forward auf `58d9930` aktualisiert; der GitHub-Mirror
-hat denselben Ausgangsstand. Die Workflow-Änderungen liegen lokal in diesem
-Codeberg-Checkout. Es wurde weder gepusht noch ein GitHub-Lauf gestartet.
+Dieser Abschnitt dokumentiert den damaligen lokalen Prüfstand. Es wurde weder
+gepusht noch ein GitHub-Lauf gestartet; die damaligen lokalen Tags und
+Image-IDs sind keine veröffentlichten Registry-Referenzen.
 
 ## Erfolgreiche Prüfungen
 
@@ -22,7 +26,7 @@ Codeberg-Checkout. Es wurde weder gepusht noch ein GitHub-Lauf gestartet.
   `5.0.0-SNAPSHOT` und Themenrepo `a354547` erfolgreich ausgeführt.
 - `IMAGE_PLATFORM=linux/arm64` mit Buildx und `--prepared-context` erfolgreich
   nativ auf Docker Desktop/Apple Silicon gebaut. Lokaler Tag:
-  `datenportal-jenkins:multiarch-check`, lokale Image-ID
+  `dateninfrastruktur-jenkins:multiarch-check`, lokale Image-ID
   `sha256:0cfbb378ee6d260172c047e81dc73dd2b724805e287f77128fa3b197665b6c84`.
   Dies ist keine veröffentlichte Registry-Referenz.
 - Java-17-/DuckDB-Offline-Tests im neuen Image erfolgreich: fünf Extensions aus
@@ -35,9 +39,8 @@ Lokale ausführliche Logs liegen als ignorierte Artefakte unter
 
 ## Noch auszuführen
 
-Nach Übernahme nach Codeberg und Spiegelung nach GitHub muss der erste reale
-Workflow-Lauf beide nativen Runner und das Zusammenführen/Verifizieren in
-Docker Hub und GHCR bestätigen. Die lokalen Tests beweisen keinen erfolgreichen
+Der aktuelle Workflow muss bei einem Push auf `main` beide nativen Runner und
+das Zusammenführen/Verifizieren in Docker Hub und GHCR bestätigen. Die lokalen Tests beweisen keinen erfolgreichen
 Push. Erst danach den neuen gemeinsamen Manifest-Digest im CRC-/Betreiber-
 Stack verwenden. Für Wiederholungen alle Workflow-Jobs erneut ausführen.
 Sodata wurde nicht verändert; dessen ARM64-Release bleibt eine eigene Aufgabe.

@@ -16,7 +16,7 @@ from rdf_matrix import run_matrix
 RUNTIME = Path(__file__).resolve().parents[2]
 TOPICS = Path(os.environ.get('THEMEN_REPO_DIR', RUNTIME.parent / 'datenportal-themenrepo')).resolve()
 PILOT = Path(os.environ.get('PILOT_REPO_DIR', RUNTIME.parent / 'datenportal-pilot-daten')).resolve()
-IMAGE = sys.argv[1] if len(sys.argv) > 1 else 'datenportal-jenkins:local'
+IMAGE = sys.argv[1] if len(sys.argv) > 1 else 'dateninfrastruktur-jenkins:local'
 (RUNTIME / 'build').mkdir(exist_ok=True)
 WORK = Path(tempfile.mkdtemp(prefix='publication-test-', dir=RUNTIME / 'build'))
 shutil.copy(RUNTIME / 'tests/publication/VerifyExports.java', WORK)
