@@ -20,7 +20,7 @@ env:
   PLUGIN_GROUP: ch.so.agi.jenkins
   PLUGIN_ARTIFACT: jenkins-gretl-datenportal-plugin
   THEMEN_REPO_URL: https://github.com/sogis/dateninfrastruktur-themenrepo.git
-  THEMEN_REPO_DIR: ${{ github.workspace }}/../dateninfrastruktur-themenrepo
+  THEMEN_REPO_DIR: ${{ github.workspace }}/themenrepo
 
 jobs:
   prepare:
@@ -58,11 +58,13 @@ jobs:
           mvn --version
 
       - name: Check out Themenrepo
-        shell: bash
-        run: |
-          set -euo pipefail
-          rm -rf "$THEMEN_REPO_DIR"
-          git clone --depth 1 --branch main "$THEMEN_REPO_URL" "$THEMEN_REPO_DIR"
+        uses: actions/checkout@v4
+        with:
+          repository: sogis/dateninfrastruktur-themenrepo
+          ref: main
+          path: themenrepo
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: false
 
       - name: Check out plugin repository
         shell: bash
