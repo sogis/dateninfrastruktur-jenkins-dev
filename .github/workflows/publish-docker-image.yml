@@ -91,7 +91,7 @@ jobs:
           PLUGIN_VERSION: 0.1.0-SNAPSHOT
           PLUGIN_REPO: ${{ github.workspace }}/../dateninfrastruktur-jenkins-gretl-plugin
           PLUGIN_SOURCE: local
-          JAVA17_HOME: ${{ steps.java17.outputs.java-home }}
+          JAVA17_HOME: ${{ steps.java17.outputs.path }}
         run: |
           set -euo pipefail
           python3 -m unittest discover -s tests
