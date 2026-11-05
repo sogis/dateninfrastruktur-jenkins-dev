@@ -23,3 +23,11 @@ Dieses Repo baut die Jenkins-/GRETL-Laufzeit und installiert das eigene Plugin. 
 ## Nachweise
 
 Frisch gebautes Plugin und tatsächlich installiertes Artefakt per SHA256 vergleichen. Erfolgreichen JCasC-Start, aktives Plugin, Seedjob und benötigte GRETL-/INTERLIS-Dateien im Integrationsstack prüfen. Abhängigkeiten und Snapshot-JAR-Hashes erfassen; Geheimnisse nicht protokollieren.
+
+## Geltung der historischen Aufträge
+
+Die vorstehenden MA-0–F-/Grundinstallationsgrenzen gelten nur für ihre damaligen
+Aufträge. Für den ausdrücklich aktivierten MA-G-Auftrag gilt `../AGENTS.md` und
+vollständig `../dateninfrastruktur-dev-stack/docs/implementation/storage-and-delivery/`.
+Aktive Altverträge werden gemäss MA-G ersetzt; Sicherheits- und Datenerhaltungsregeln
+bleiben bindend. Historische Dokumente und Nutzerarbeit nicht umschreiben.
