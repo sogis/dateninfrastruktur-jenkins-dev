@@ -24,3 +24,9 @@ Jenkins zuerst gestoppt; der im Dev-Stack dokumentierte Offline-Schritt
 archiviert die anhand ihrer Jobproperty identifizierten Altjobs samt Historie.
 Fremde Jobs und das Home bleiben erhalten. Ein frischer Start erzeugt
 `di-csv-ingest`, die Anlieferung ist unter `/anlieferung` erreichbar.
+
+Der frühere Multiarch-Publikationsablauf ist im
+[historischen Workflow](docs/historical/publish-docker-image-ma-f.yml)
+dokumentiert. Er verwendete ein anderes Toolchain- und Installationsverfahren.
+MA-G liefert den geprüften lokalen Kandidatenbuild; es wird kein neuer
+Release- oder CI-Ablauf eingerichtet.

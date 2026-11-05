@@ -1,3 +1,0 @@
-# Ausschliesslich Testhost; keine zusätzliche Bibliothek im Jenkins-Image.
-rdflib==7.1.4
-pyparsing==3.2.3
