@@ -15,7 +15,7 @@ cp "$root/Dockerfile" "$root/plugins.txt" "$root/docker-entrypoint.sh" "$context
 cp "$stack/services/jenkins/jenkins-stack.yaml" "$context/jenkins.yaml"
 cp "$plugin/target/jenkins-gretl-dateninfrastruktur-plugin.hpi" "$context/delivery.jpi"
 mkdir "$context/runner-bundle"
-cp -R "$topics/contracts" "$topics/models" "$context/runner-bundle/"
+cp -R "$topics/contracts" "$topics/models" "$topics/runner" "$context/runner-bundle/"
 python3 - "$context" "$stack" "$plugin" "$topics" "${IMAGE_VERSION:-local}" <<'PY'
 import base64,hashlib,json,pathlib,subprocess,sys
 context,stack,plugin,topics=map(pathlib.Path,sys.argv[1:5]);contract=json.loads((stack/'docs/implementation/storage-and-delivery/contracts/g0-toolchain.json').read_text());source=contract['jenkins_base_image_id']
