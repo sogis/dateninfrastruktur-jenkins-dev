@@ -1,27 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
-
-runtime_mode="${JENKINS_RUNTIME_MODE:-production}"
-
-case "$runtime_mode" in
-  dev)
-    ;;
-  production)
-    : "${THEMEN_REPO_URL:?THEMEN_REPO_URL muss fuer den Produktionsbetrieb gesetzt sein}"
-    : "${THEMEN_REPO_BRANCH:?THEMEN_REPO_BRANCH muss gesetzt sein}"
-    : "${JENKINS_URL:?JENKINS_URL muss fuer den Produktionsbetrieb gesetzt sein}"
-    : "${JENKINS_ADMIN_ADDRESS:?JENKINS_ADMIN_ADDRESS muss gesetzt sein}"
-    : "${AD_DOMAIN:?AD_DOMAIN muss fuer die Active-Directory-Anmeldung gesetzt sein}"
-    : "${AD_SERVERS:?AD_SERVERS muss fuer die Active-Directory-Anmeldung gesetzt sein}"
-    : "${AD_BIND_NAME:?AD_BIND_NAME muss fuer die Active-Directory-Anmeldung gesetzt sein}"
-    : "${AD_BIND_PASSWORD:?AD_BIND_PASSWORD muss fuer die Active-Directory-Anmeldung gesetzt sein}"
-    ;;
-  *)
-    echo "Unbekannter JENKINS_RUNTIME_MODE: $runtime_mode (erlaubt: dev, production)" >&2
+: "${JENKINS_URL:?Explicit Compose Jenkins URL required}"
+: "${DI_JENKINS_ISSUER:?Explicit Keycloak issuer required}"
+for key in DI_JENKINS_OIDC_CLIENT_SECRET DI_INGESTION_PLUGIN_SECRET DI_INGESTION_EXECUTOR_CLIENT_SECRET JENKINS_ADMIN_PASSWORD; do
+  [[ ! -v "$key" && -r "/run/secrets/$key" && -s "/run/secrets/$key" ]] || {
+    printf 'Jenkins requires its explicit mounted credential: %s\n' "$key" >&2
     exit 1
-    ;;
-esac
-
-/usr/local/bin/configure-duckdb-extensions.sh
-
+  }
+done
+[[ ${DI_JENKINS_IMAGE_SHA256:-} =~ ^[0-9a-f]{64}$ ]] || { printf "Bind the explicit Jenkins candidate image to this Compose runtime.\n" >&2; exit 1; }
 exec /usr/bin/tini -- /usr/local/bin/jenkins.sh "$@"

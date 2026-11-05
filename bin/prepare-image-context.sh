@@ -1,134 +1,39 @@
 #!/usr/bin/env bash
 set -euo pipefail
-
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-THEMEN_REPO_DIR="${THEMEN_REPO_DIR:-$ROOT_DIR/../dateninfrastruktur-themenrepo}"
-PLUGIN_REPO="${PLUGIN_REPO:-$ROOT_DIR/../dateninfrastruktur-jenkins-gretl-plugin}"
-PLUGIN_HPI_SOURCE="${PLUGIN_HPI_SOURCE:-}"
-PLUGIN_SOURCE="${PLUGIN_SOURCE:-local}"
-PLUGIN_GROUP="${PLUGIN_GROUP:-ch.so.agi.jenkins}"
-PLUGIN_ARTIFACT="${PLUGIN_ARTIFACT:-jenkins-gretl-dateninfrastruktur-plugin}"
-PLUGIN_VERSION="${PLUGIN_VERSION:-0.1.0-SNAPSHOT}"
-PLUGIN_REPOSITORY_URL="${PLUGIN_REPOSITORY_URL:-https://jars.interlis.guru/snapshots}"
-MAVEN_REPO_LOCAL="${MAVEN_REPO_LOCAL:-${HOME}/.m2/repository}"
-OFFLINE_BUNDLE_DIR="${OFFLINE_BUNDLE_DIR:-$ROOT_DIR/build/offline-bundle}"
-DOCKER_CONTEXT_DIR="$ROOT_DIR/build/docker-context"
-IMAGE_VERSION="${IMAGE_VERSION:-local}"
-JENKINS_VERSION="${JENKINS_VERSION:-2.555.2}"
-JENKINS_IMAGE="${JENKINS_IMAGE:-jenkins/jenkins:${JENKINS_VERSION}-lts-jdk21}"
-TEMURIN17_VERSION="${TEMURIN17_VERSION:-17.0.15+6}"
-
-command -v python3 >/dev/null || { echo "Python 3 fehlt."; exit 1; }
-command -v rsync >/dev/null || { echo "rsync fehlt."; exit 1; }
-
-resolve_local_plugin() {
-  command -v mvn >/dev/null || {
-    echo "Maven fehlt fuer den lokalen Plugin-Build." >&2
-    return 1
-  }
-
-  if [ ! -d "$PLUGIN_REPO" ]; then
-    echo "Plugin-Repository nicht gefunden: $PLUGIN_REPO" >&2
-    return 1
-  fi
-
-  echo "Baue Jenkins-Plugin lokal ..." >&2
-  (
-    cd "$PLUGIN_REPO"
-    mvn -ntp package >&2
-  )
-
-  find "$PLUGIN_REPO/target" -maxdepth 1 -type f -name '*.hpi' -print | sort | tail -n 1
-}
-
-resolve_maven_plugin() {
-  command -v mvn >/dev/null || {
-    echo "Maven fehlt fuer die Plugin-Aufloesung aus Maven." >&2
-    return 1
-  }
-
-  local coordinate="${PLUGIN_GROUP}:${PLUGIN_ARTIFACT}:${PLUGIN_VERSION}:hpi"
-  echo "Loese Jenkins-Plugin aus Maven auf: $coordinate" >&2
-  mvn -ntp org.apache.maven.plugins:maven-dependency-plugin:3.8.1:get \
-    -Dartifact="$coordinate" \
-    -DremoteRepositories="jars.interlis.guru::default::${PLUGIN_REPOSITORY_URL}" \
-    -Dmaven.repo.local="$MAVEN_REPO_LOCAL" \
-    -Dtransitive=false >&2
-
-  find "$MAVEN_REPO_LOCAL/${PLUGIN_GROUP//.//}/${PLUGIN_ARTIFACT}/${PLUGIN_VERSION}" \
-    -maxdepth 1 -type f -name '*.hpi' -print | sort | tail -n 1
-}
-
-resolve_plugin_hpi() {
-  if [ -n "$PLUGIN_HPI_SOURCE" ]; then
-    printf '%s\n' "$PLUGIN_HPI_SOURCE"
-    return 0
-  fi
-
-  case "$PLUGIN_SOURCE" in
-    local)
-      resolve_local_plugin
-      ;;
-    maven)
-      resolve_maven_plugin
-      ;;
-    auto)
-      if [ -d "$PLUGIN_REPO" ]; then
-        resolve_local_plugin
-      else
-        resolve_maven_plugin
-      fi
-      ;;
-    *)
-      echo "Unbekannter PLUGIN_SOURCE: $PLUGIN_SOURCE (erlaubt: local, maven, auto)" >&2
-      return 1
-      ;;
-  esac
-}
-
-PLUGIN_HPI_SOURCE="$(resolve_plugin_hpi)"
-if [ ! -f "$PLUGIN_HPI_SOURCE" ]; then
-  echo "Plugin-HPI nicht gefunden: $PLUGIN_HPI_SOURCE" >&2
-  exit 1
-fi
-
-if [ ! -f "$THEMEN_REPO_DIR/shared/gradle/gradle-build.properties" ]; then
-  echo "Gradle-Build-Konfiguration des Themenrepos nicht gefunden: $THEMEN_REPO_DIR" >&2
-  exit 1
-fi
-
-GRETL_VERSION="${GRETL_VERSION:-$(awk -F= '$1 == "dateninfrastruktur.plugin.gretl.version" {print $2}' "$THEMEN_REPO_DIR/shared/gradle/gradle-build.properties" | tr -d '[:space:]')}"
-GRETL_VERSION="${GRETL_VERSION:-unknown}"
-THEMEN_REPO_REVISION="${THEMEN_REPO_REVISION:-$(git -C "$THEMEN_REPO_DIR" rev-parse HEAD 2>/dev/null || printf 'unknown')}"
-PLUGIN_REPO_REVISION="${PLUGIN_REPO_REVISION:-$(git -C "$PLUGIN_REPO" rev-parse HEAD 2>/dev/null || printf 'unknown')}"
-
-"$ROOT_DIR/bin/build-offline-bundle.sh" "$OFFLINE_BUNDLE_DIR"
-
-rm -rf "$DOCKER_CONTEXT_DIR"
-mkdir -p "$DOCKER_CONTEXT_DIR/offline-bundle"
-
-cp "$ROOT_DIR/Dockerfile" "$DOCKER_CONTEXT_DIR/Dockerfile"
-cp "$ROOT_DIR/plugins.txt" "$DOCKER_CONTEXT_DIR/plugins.txt"
-cp "$ROOT_DIR/casc/jenkins-production.yaml" "$DOCKER_CONTEXT_DIR/jenkins.yaml"
-cp "$ROOT_DIR/bin/configure-duckdb-extensions.sh" "$DOCKER_CONTEXT_DIR/configure-duckdb-extensions.sh"
-cp "$ROOT_DIR/docker-entrypoint.sh" "$DOCKER_CONTEXT_DIR/docker-entrypoint.sh"
-cp "$PLUGIN_HPI_SOURCE" "$DOCKER_CONTEXT_DIR/jenkins-gretl-dateninfrastruktur-plugin.jpi"
-rsync -a --delete \
-  --exclude '.DS_Store' \
-  "$OFFLINE_BUNDLE_DIR/" "$DOCKER_CONTEXT_DIR/offline-bundle/"
-
-# Keep the exact inputs with the context; never re-resolve snapshots in matrix jobs.
-export JENKINS_IMAGE IMAGE_VERSION PLUGIN_VERSION GRETL_VERSION THEMEN_REPO_REVISION
-export PLUGIN_REPO_REVISION TEMURIN17_VERSION
-python3 - "$DOCKER_CONTEXT_DIR/build-args.json" <<'PYARGS'
-import json
-import os
-import sys
-keys = ('JENKINS_IMAGE', 'IMAGE_VERSION', 'PLUGIN_VERSION', 'GRETL_VERSION',
-        'THEMEN_REPO_REVISION', 'PLUGIN_REPO_REVISION', 'TEMURIN17_VERSION')
-with open(sys.argv[1], 'w') as out:
-    json.dump({key: os.environ[key] for key in keys}, out, indent=2)
-    out.write('\n')
-PYARGS
-printf '\nBuild-Kontext vorbereitet: %s\n' "$DOCKER_CONTEXT_DIR"
+root="$(cd "$(dirname "$0")/.." && pwd)"
+stack="$root/../dateninfrastruktur-dev-stack"
+plugin="$root/../dateninfrastruktur-jenkins-gretl-plugin"
+topics="$root/../dateninfrastruktur-themenrepo"
+context="${1:?Explicit new build context directory required}"
+[[ ! -e "$context" ]] || { printf 'Build context already exists; no overwrite.\n' >&2; exit 1; }
+mkdir -p "$context"
+chmod 0700 "$context"
+source "$root/bin/java-env.sh"
+activate_java_home "$(resolve_java_home 21 JAVA21_HOME 'Java 21 for the Jenkins HPI')"
+(cd "$plugin" && mvn -ntp clean package)
+cp "$root/Dockerfile" "$root/plugins.txt" "$root/docker-entrypoint.sh" "$context/"
+cp "$stack/services/jenkins/jenkins-stack.yaml" "$context/jenkins.yaml"
+cp "$plugin/target/jenkins-gretl-dateninfrastruktur-plugin.hpi" "$context/delivery.jpi"
+mkdir "$context/runner-bundle"
+cp -R "$topics/contracts" "$topics/models" "$context/runner-bundle/"
+python3 - "$context" "$stack" "$plugin" "$topics" "${IMAGE_VERSION:-local}" <<'PY'
+import base64,hashlib,json,pathlib,subprocess,sys
+context,stack,plugin,topics=map(pathlib.Path,sys.argv[1:5]);contract=json.loads((stack/'docs/implementation/storage-and-delivery/contracts/g0-toolchain.json').read_text());source=contract['jenkins_base_image_id']
+actual=subprocess.check_output(['docker','image','inspect','--format','{{.Id}}',source],text=True).strip()
+assert actual==source,'Missing exact G0 toolchain image; no alternate runtime permitted'
+tag='di-verified-gretl-toolchain:'+source.split(':')[1][:20]
+old=subprocess.run(['docker','image','inspect','--format','{{.Id}}',tag],capture_output=True,text=True)
+assert old.returncode!=0 or old.stdout.strip()==source,'Toolchain tag collision'
+if old.returncode:subprocess.run(['docker','tag',source,tag],check=True)
+(context/'toolchain-jars.sha256').write_text(''.join(digest+'  '+name+'\n' for name,digest in sorted(contract['gretl_jars_sha256'].items())))
+(context/'oidc-plugin.sha256').write_text(base64.b64decode(contract['oic_auth_hpi_sha256_base64']).hex()+'  oic-auth.jpi\n')
+head=lambda repo:subprocess.check_output(['git','-C',str(repo),'rev-parse','HEAD'],text=True).strip()
+args={'JENKINS_IMAGE':'jenkins/jenkins:2.555.2-lts-jdk21@sha256:01c992ffef29dcf41c7164e8c16285c657c2368c4943dda8d68c93fdf54447d5','IMAGE_VERSION':sys.argv[5],'PLUGIN_VERSION':'0.2.0-SNAPSHOT','GRETL_VERSION':'5.0.0-SNAPSHOT','THEMEN_REPO_REVISION':head(topics),'PLUGIN_REPO_REVISION':head(plugin),'G0_TOOLCHAIN_IMAGE':tag,'PLUGIN_HPI_SHA256':hashlib.sha256((context/'delivery.jpi').read_bytes()).hexdigest()}
+bundle=context/'runner-bundle'
+files={f.relative_to(bundle).as_posix():hashlib.sha256(f.read_bytes()).hexdigest() for f in sorted(bundle.rglob('*')) if f.is_file()}
+canonical=lambda data:json.dumps(data,sort_keys=True,separators=(',',':')).encode()
+revisions={'topics':head(topics),'plugin':head(plugin),'stack':head(stack),'jenkins':head(stack.parent/'dateninfrastruktur-jenkins-dev')}
+provenance={'runnerSha256':hashlib.sha256(canonical(files)).hexdigest(),'repositorySha256':hashlib.sha256(canonical(revisions)).hexdigest()}
+(context/'runner-provenance.json').write_bytes(canonical(provenance)+b'\n')
+(context/'build-args.json').write_text(json.dumps(args,indent=2)+'\n')
+PY
