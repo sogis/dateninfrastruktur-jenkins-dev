@@ -18,9 +18,9 @@ mkdir "$context/runner-bundle"
 git -C "$topics" archive HEAD -- contracts models runner | tar -x -C "$context/runner-bundle"
 python3 - "$context" "$stack" "$plugin" "$topics" "${IMAGE_VERSION:-local}" <<'PY'
 import base64,hashlib,json,pathlib,subprocess,sys
-context,stack,plugin,topics=map(pathlib.Path,sys.argv[1:5]);contract=json.loads((stack/'docs/implementation/storage-and-delivery/contracts/g0-toolchain.json').read_text());source=contract['jenkins_base_image_id']
+context,stack,plugin,topics=map(pathlib.Path,sys.argv[1:5]);contract=json.loads((stack.parent/'dateninfrastruktur-jenkins-dev/toolchain-lock.json').read_text());source=contract['jenkins_base_image_id']
 actual=subprocess.check_output(['docker','image','inspect','--format','{{.Id}}',source],text=True).strip()
-assert actual==source,'Missing exact G0 toolchain image; no alternate runtime permitted'
+assert actual==source,'Missing exact pinned GRETL toolchain image; no alternate runtime permitted'
 tag='di-verified-gretl-toolchain:'+source.split(':')[1][:20]
 old=subprocess.run(['docker','image','inspect','--format','{{.Id}}',tag],capture_output=True,text=True)
 assert old.returncode!=0 or old.stdout.strip()==source,'Toolchain tag collision'
