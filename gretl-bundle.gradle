@@ -1,0 +1,27 @@
+repositories {
+    exclusiveContent {
+        forRepository {
+            maven { url = uri('https://jars.interlis.guru/snapshots') }
+        }
+        filter { includeModule('ch.so.agi', 'gretl-core') }
+    }
+    mavenCentral()
+    maven { url = uri('https://jars.interlis.guru/mirror') }
+    maven { url = uri('https://jars.interlis.ch') }
+    maven { url = uri('https://repo.osgeo.org/repository/release/') }
+    maven { url = uri('https://maven.geo-solutions.it') }
+}
+
+configurations {
+    gretlRuntime
+}
+
+dependencies {
+    gretlRuntime "ch.so.agi:gretl-core:${providers.gradleProperty('gretlVersion').get()}"
+}
+
+tasks.register('bundle', Sync) {
+    from configurations.gretlRuntime
+    into '/bundle/jars'
+    duplicatesStrategy = DuplicatesStrategy.FAIL
+}

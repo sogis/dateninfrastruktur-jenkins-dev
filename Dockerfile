@@ -1,7 +1,25 @@
 # syntax=docker/dockerfile:1
 ARG JENKINS_IMAGE=jenkins/jenkins:2.555.2-lts-jdk21@sha256:01c992ffef29dcf41c7164e8c16285c657c2368c4943dda8d68c93fdf54447d5
-ARG G0_TOOLCHAIN_IMAGE
-FROM ${G0_TOOLCHAIN_IMAGE} AS gretl_toolchain
+FROM gradle:7.6.4-jdk17@sha256:0aa0a8521188366a1426ee5f3f13df5bac48184b5f6e7a21ddbfa495efb4e611 AS gretl_toolchain
+ARG GRETL_VERSION
+ARG GRETL_SHA256
+ENV DUCKDB_EXTENSION_DIRECTORY=/bundle/duckdb-extensions
+WORKDIR /build
+COPY gretl-bundle.gradle build.gradle
+RUN --mount=type=cache,target=/home/gradle/.gradle \
+    set -eu; \
+    gradle --no-daemon -PgretlVersion="$GRETL_VERSION" bundle; \
+    cd /bundle/jars; \
+    jar="$(find . -maxdepth 1 -name 'gretl-core-*.jar')"; \
+    test -f "$jar"; \
+    printf '%s  %s\n' "$GRETL_SHA256" "$jar" | sha256sum -c -; \
+    LC_ALL=C sha256sum ./*.jar > /bundle/toolchain-jars.sha256; \
+    java -cp '/bundle/jars/*' ch.so.agi.gretl.internal.duckdb.DuckDbExtensionInstaller postgres spatial excel httpfs; \
+    cd /bundle/duckdb-extensions; \
+    find . -type f -name '*.duckdb_extension' | LC_ALL=C sort | xargs sha256sum > /bundle/duckdb-extensions.sha256; \
+    for extension in postgres_scanner spatial excel httpfs; do \
+        grep -q "/$extension.duckdb_extension$" /bundle/duckdb-extensions.sha256 || { cat /bundle/duckdb-extensions.sha256; exit 1; }; \
+    done
 FROM rclone/rclone:1.75.2@sha256:2687085f718d3c628f7fdfb77c52a1d344332aed543110bb88088f2c70d43eb5 AS rclone_binary
 FROM ${JENKINS_IMAGE}
 ARG IMAGE_VERSION=local
@@ -26,15 +44,16 @@ ENV TZ=Europe/Zurich \
     GRADLE_JAVA_HOME_17=/opt/java/openjdk17 \
     JENKINS_JAVA_OPTS=-Djenkins.install.runSetupWizard=false
 # Copy only the verified tools. No legacy Jenkins home, plugin, script or JCasC is inherited.
-COPY --from=gretl_toolchain /opt/java/openjdk17 /opt/java/openjdk17
+COPY --from=gretl_toolchain /opt/java/openjdk /opt/java/openjdk17
 COPY --from=rclone_binary /usr/local/bin/rclone /usr/local/bin/di-rclone
-COPY --from=gretl_toolchain /opt/datenportal/offline-bundle /opt/dateninfrastruktur/offline-bundle
-COPY --from=gretl_toolchain /opt/datenportal/duckdb-extensions /opt/dateninfrastruktur/duckdb-extensions
-COPY toolchain-jars.sha256 /opt/dateninfrastruktur/toolchain-jars.sha256
+COPY --from=gretl_toolchain /opt/gradle /opt/dateninfrastruktur/gradle
+COPY --from=gretl_toolchain /bundle/jars /opt/dateninfrastruktur/offline-bundle/jars
+COPY --from=gretl_toolchain /bundle/duckdb-extensions /opt/dateninfrastruktur/duckdb-extensions
+COPY --from=gretl_toolchain /bundle/*.sha256 /opt/dateninfrastruktur/
 RUN cd /opt/dateninfrastruktur/offline-bundle/jars && sha256sum -c /opt/dateninfrastruktur/toolchain-jars.sha256 && \
-    test "$(find . -maxdepth 1 -type f -name '*.jar' | wc -l)" -eq "$(wc -l < /opt/dateninfrastruktur/toolchain-jars.sha256)" && \
+    cd /opt/dateninfrastruktur/duckdb-extensions && sha256sum -c /opt/dateninfrastruktur/duckdb-extensions.sha256 && \
     /opt/java/openjdk17/bin/java -version && \
-    gradle="$(find /opt/dateninfrastruktur/offline-bundle/gradle-user-home -type f -path '*/gradle-7.6.4/bin/gradle')" && test -x "$gradle" && ln -s "$(dirname "$(dirname "$gradle")")" /opt/dateninfrastruktur/gradle && chown -R root:root /opt/dateninfrastruktur && chmod -R a+rX,a-w /opt/dateninfrastruktur
+    chown -R root:root /opt/dateninfrastruktur && chmod -R a+rX,a-w /opt/dateninfrastruktur
 COPY --chown=jenkins:jenkins plugins.txt /usr/share/jenkins/ref/plugins.txt
 COPY oidc-plugin.sha256 /opt/dateninfrastruktur/oidc-plugin.sha256
 USER jenkins
