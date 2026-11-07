@@ -13,7 +13,7 @@ else
 fi
 metadata="$(python3 - "$context/build-args.json" <<'PY'
 import json,sys
-args=json.load(open(sys.argv[1]));keys={'JENKINS_IMAGE','IMAGE_VERSION','PLUGIN_VERSION','GRETL_VERSION','THEMEN_REPO_REVISION','PLUGIN_REPO_REVISION','G0_TOOLCHAIN_IMAGE','PLUGIN_HPI_SHA256'}
+args=json.load(open(sys.argv[1]));keys={'JENKINS_IMAGE','IMAGE_VERSION','PLUGIN_VERSION','GRETL_VERSION','THEMEN_REPO_REVISION','PLUGIN_REPO_REVISION','GRETL_SHA256','PLUGIN_HPI_SHA256'}
 if set(args)!=keys or any(not isinstance(v,str) or not v or '\n' in v or '\r' in v for v in args.values()):raise SystemExit('Invalid explicit build metadata')
 for k,v in args.items():print(k+'='+v)
 PY

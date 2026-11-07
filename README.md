@@ -11,12 +11,13 @@ Für einen lokalen Kandidaten aus den sechs zusammengehörigen Checkouts:
 IMAGE_NAME=dateninfrastruktur-jenkins:mein-kandidat ./bin/build-image.sh <neues-kontextverzeichnis>
 ```
 
-Der Build benötigt Java 21, Maven, Docker mit Buildx sowie das lokal vorhandene, im [Toolchain-Lock](toolchain-lock.json) gebundene GRETL-Image. Er baut das HPI aus
-dem Schwestercheckout, prüft die GRETL-JARs und das gepinnte OIDC-HPI per
-SHA256 und kopiert die versionierten Modelle und Verträge als schreibgeschütztes
-Bundle ins Image. Für GRETL enthält das Image Java 17. Buildargumente und
-HPI-Hash stehen im erzeugten Kontext. Ein bereits erzeugter Kontext lässt sich
-mit `./bin/build-image.sh --prepared-context <kontext>` erneut bauen.
+Der Build benötigt Java 21, Maven und Docker mit Buildx. Er ermittelt das
+aktuelle GRETL-5-Snapshot aus dem Maven-Repository, löst dessen Laufzeit-JARs
+auf und nimmt sie zusammen mit den DuckDB-Erweiterungen als geprüftes
+Offline-Bundle ins Image auf. Der Build dokumentiert die konkrete
+Snapshot-Version und die SHA-256-Prüfsummen. Das HPI kommt aus dem
+Schwestercheckout. Modelle, Verträge und Runner liegen schreibgeschützt im
+Image. GRETL läuft mit Java 17.
 
 Der Stack verwendet ein persistentes Jenkins-Home. Der generische
 Job `di-csv-ingest` verarbeitet gebundene Lieferpläne. Die Anlieferung ist

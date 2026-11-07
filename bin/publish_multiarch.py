@@ -39,7 +39,7 @@ def verify_index(index, expected):
         raise ValueError('Published index does not reference exactly the two tested platform digests')
 
 
-def publish(images, version, staging_prefix):
+def publish(images, version, staging_prefix, *, version_only=False):
     if not TAG.fullmatch(version) or version == 'latest':
         raise ValueError('Invalid version tag')
     if not all(TAG.fullmatch(f'{staging_prefix}-{arch}') for arch in ARCHITECTURES):
@@ -54,9 +54,10 @@ def publish(images, version, staging_prefix):
             candidates[image][arch] = platform_digest(manifest, arch)
     for image, digests in candidates.items():
         refs = [f'{image}@{digests[arch]}' for arch in ARCHITECTURES]
-        docker('buildx', 'imagetools', 'create', '--tag', f'{image}:{version}',
-               '--tag', f'{image}:latest', *refs)
-        for tag in (version, 'latest'):
+        tags = (version,) if version_only else (version, 'latest')
+        tag_args = [value for tag in tags for value in ('--tag', f'{image}:{tag}')]
+        docker('buildx', 'imagetools', 'create', *tag_args, *refs)
+        for tag in tags:
             index = json.loads(docker('buildx', 'imagetools', 'inspect', '--raw', f'{image}:{tag}'))
             verify_index(index, digests)
             print(f'{image}:{tag}: verified linux/amd64 + linux/arm64', flush=True)
@@ -67,9 +68,10 @@ def main():
     parser.add_argument('--image', action='append', required=True)
     parser.add_argument('--version', required=True)
     parser.add_argument('--staging-prefix', required=True)
+    parser.add_argument('--version-only', action='store_true')
     args = parser.parse_args()
     try:
-        publish(args.image, args.version, args.staging_prefix)
+        publish(args.image, args.version, args.staging_prefix, version_only=args.version_only)
     except (OSError, ValueError, subprocess.SubprocessError) as error:
         print(f'Multiarch publication failed: {error}', file=sys.stderr)
         return 1
