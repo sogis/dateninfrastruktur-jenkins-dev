@@ -1,5 +1,6 @@
 configuration-as-code:2081.v2d0940662a_34
 credentials:1511.v2e3cb_0008ef0
+jakarta-mail-api:2.1.5-1
 jackson3-api:3.1.4-81.v804303fd947a_
 matrix-auth:3.3
 oic-auth:4.731.v4932b_506e767

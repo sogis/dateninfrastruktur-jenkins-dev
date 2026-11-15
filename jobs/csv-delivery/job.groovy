@@ -12,14 +12,14 @@ parameter('s3Bucket', defaultValue: 'ch.so.daten', description: 'Privater Garage
 parameter('clickhouseUrl', required: true, description: 'ClickHouse-HTTP-Endpunkt')
 parameter('clickhouseUser', required: true, description: 'ClickHouse-Importbenutzer')
 
-def deliveryUrl = { operation ->
-    def base = URI.create(parameter('adminUrl'))
-    if (base.scheme != 'https' && !(parameter('localHttp') && base.scheme == 'http')) {
+def deliveryUrl = { adminUrl, localHttp, submissionId, operation ->
+    def base = URI.create(adminUrl)
+    if (base.scheme != 'https' && !(localHttp && base.scheme == 'http')) {
         throw new IllegalArgumentException('Die Admin-API benötigt HTTPS.')
     }
-    "${base}/${UUID.fromString(parameter('submissionId'))}/${operation}"
+    "${base}/${UUID.fromString(submissionId)}/${operation}"
 }
-def table = { 'snapshot_' + UUID.fromString(parameter('submissionId')).toString().replace('-', '') }
+def table = { submissionId -> 'snapshot_' + UUID.fromString(submissionId).toString().replace('-', '') }
 def sqlPath = { path -> "'" + path.toString().replace("'", "''") + "'" }
 
 def clickhouseColumn = { column ->
@@ -46,7 +46,7 @@ task('authorizeStart', OAuth2ClientCredentials) {
 }
 
 task('start', Curl, dependsOn: 'authorizeStart') {
-    serverUrl = deliveryUrl('start')
+    serverUrl = deliveryUrl(parameter('adminUrl'), parameter('localHttp'), parameter('submissionId'), 'start')
     method = 'POST'
     expectedStatusCode = 200
     headers = ['Authorization': result('authorizeStart').authorization]
@@ -61,7 +61,7 @@ task('start', Curl, dependsOn: 'authorizeStart') {
 }
 
 task('downloadModel', Curl, dependsOn: 'schemaModelName') {
-    serverUrl = deliveryUrl('model.ili')
+    serverUrl = deliveryUrl(parameter('adminUrl'), parameter('localHttp'), parameter('submissionId'), 'model.ili')
     expectedStatusCode = 200
     headers = ['Authorization': result('authorizeStart').authorization]
     outputFile = workPath(result('schemaModelName').value + '.ili')
@@ -75,7 +75,9 @@ task('downloadBase', S3Download, dependsOn: ['mode', 'baseCsvKey'], when: {
     endpoint = parameter('s3Endpoint')
     region = 'garage'
     bucketName = parameter('s3Bucket')
-    key = result('baseCsvKey').value ?: { throw new IllegalArgumentException('Die Append-Basis fehlt.') }()
+    def baseKey = result('baseCsvKey').value
+    if (!baseKey) throw new IllegalArgumentException('Die Append-Basis fehlt.')
+    key = baseKey
     downloadDir = workPath('base')
 }
 
@@ -91,12 +93,12 @@ task('append', DuckDbSqlExecutor, dependsOn: 'downloadBase', when: {
     ]
 }
 
-def snapshot = {
-    result('mode').value == 'append' ? parameter('inputFile').resolveSibling('snapshot.csv') : parameter('inputFile')
+def snapshot = { mode, input ->
+    mode == 'append' ? input.resolveSibling('snapshot.csv') : input
 }
 
 task('validate', CsvValidator, dependsOn: ['append', 'downloadModel']) {
-    dataFiles = [snapshot()]
+    dataFiles = [snapshot(result('mode').value, parameter('inputFile'))]
     modelNames = [result('schemaModelName').value]
     modelDirectories = [result('downloadModel').outputFile.parent]
     firstLineIsHeader = true
@@ -108,7 +110,7 @@ task('validate', CsvValidator, dependsOn: ['append', 'downloadModel']) {
 }
 
 task('reject', Curl, dependsOn: 'validate', when: { !result('validate').valid }) {
-    serverUrl = deliveryUrl('reject')
+    serverUrl = deliveryUrl(parameter('adminUrl'), parameter('localHttp'), parameter('submissionId'), 'reject')
     method = 'POST'
     expectedStatusCode = 200
     headers = ['Authorization': result('authorizeStart').authorization, 'Content-Type': 'application/json']
@@ -118,20 +120,20 @@ task('reject', Curl, dependsOn: 'validate', when: { !result('validate').valid })
 task('createTable', SqlExecutor, dependsOn: ['validate', 'columns'], when: { result('validate').valid }) {
     database = 'clickhouse'
     def columns = new JsonSlurper().parseText(result('columns').value).collect(clickhouseColumn).join(', ')
-    statements = [[sql: "CREATE TABLE default.${table()} (${columns}) ENGINE = MergeTree ORDER BY tuple()".toString(),
+    statements = [[sql: "CREATE TABLE default.${table(parameter('submissionId'))} (${columns}) ENGINE = MergeTree ORDER BY tuple()".toString(),
                    parameters: []]]
 }
 
 task('importCsv', CsvImport, dependsOn: 'createTable', when: {
-    result('validate').valid && Files.newBufferedReader(snapshot()).withCloseable { reader ->
+    result('validate').valid && Files.newBufferedReader(snapshot(result('mode').value, parameter('inputFile'))).withCloseable { reader ->
         reader.readLine()
         reader.read() != -1
     }
 }) {
     database = 'clickhouse'
     schemaName = 'default'
-    tableName = table()
-    dataFile = snapshot()
+    tableName = table(parameter('submissionId'))
+    dataFile = snapshot(result('mode').value, parameter('inputFile'))
     firstLineIsHeader = true
     valueSeparator = ','
     valueDelimiter = '"'
@@ -144,7 +146,7 @@ task('upload', S3Upload, dependsOn: ['importCsv', 'candidatePrefix'], when: { re
     endpoint = parameter('s3Endpoint')
     region = 'garage'
     bucketName = parameter('s3Bucket')
-    sourceFile = snapshot()
+    sourceFile = snapshot(result('mode').value, parameter('inputFile'))
     key = result('candidatePrefix').value + 'snapshot.csv'
     acl = 'private'
     contentType = 'text/csv'
@@ -156,7 +158,7 @@ task('count', Curl, dependsOn: 'upload', when: { result('validate').valid }) {
     expectedStatusCode = 200
     user = parameter('clickhouseUser')
     password = secret('clickhousePassword')
-    data = "SELECT count() AS objectCount FROM default.${table()} FORMAT JSONEachRow"
+    data = "SELECT count() AS objectCount FROM default.${table(parameter('submissionId'))} FORMAT JSONEachRow"
     outputFile = workPath('count.json')
 }
 
@@ -173,7 +175,7 @@ task('authorizeComplete', OAuth2ClientCredentials, dependsOn: 'readCount', when:
 }
 
 task('complete', Curl, dependsOn: 'authorizeComplete', when: { result('validate').valid }) {
-    serverUrl = deliveryUrl('complete')
+    serverUrl = deliveryUrl(parameter('adminUrl'), parameter('localHttp'), parameter('submissionId'), 'complete')
     method = 'POST'
     expectedStatusCode = 200
     headers = ['Authorization': result('authorizeComplete').authorization, 'Content-Type': 'application/json']
