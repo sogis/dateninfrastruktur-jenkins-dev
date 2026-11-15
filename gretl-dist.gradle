@@ -1,0 +1,31 @@
+repositories {
+    mavenCentral()
+    maven {
+        url = uri('https://jars.interlis.guru/snapshots')
+        content { includeModule('ch.so.agi.gretl', 'gretl-dist') }
+    }
+}
+
+configurations {
+    clickhouseDriver {
+        canBeConsumed = false
+        transitive = false
+    }
+    distribution {
+        canBeConsumed = false
+        transitive = false
+    }
+}
+
+dependencies {
+    clickhouseDriver 'com.clickhouse:clickhouse-jdbc:0.9.8:all'
+    distribution 'ch.so.agi.gretl:gretl-dist:6.0.0-SNAPSHOT:bin@zip'
+}
+
+tasks.register('installGretl', Sync) {
+    from { zipTree(configurations.distribution.singleFile) }
+    from(configurations.clickhouseDriver) {
+        into 'gretl-runtime-6.0.0-SNAPSHOT/lib/extensions'
+    }
+    into layout.buildDirectory.dir('gretl')
+}
