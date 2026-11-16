@@ -105,15 +105,22 @@ task('validate', CsvValidator, dependsOn: ['append', 'downloadModel']) {
     valueSeparator = ','
     valueDelimiter = '"'
     encoding = 'UTF-8'
-    logFile = workPath('validation.log')
+    logFile = parameter('inputFile').resolveSibling('validation.log')
     failOnError = false
 }
 
-task('reject', Curl, dependsOn: 'validate', when: { !result('validate').valid }) {
+task('authorizeReject', OAuth2ClientCredentials, dependsOn: 'validate', when: { !result('validate').valid }) {
+    tokenUrl = parameter('tokenUrl')
+    clientId = 'gretl-delivery'
+    clientSecret = secret('oauthClientSecret')
+    allowInsecureHttp = parameter('localHttp')
+}
+
+task('reject', Curl, dependsOn: 'authorizeReject', when: { !result('validate').valid }) {
     serverUrl = deliveryUrl(parameter('adminUrl'), parameter('localHttp'), parameter('submissionId'), 'reject')
     method = 'POST'
     expectedStatusCode = 200
-    headers = ['Authorization': result('authorizeStart').authorization, 'Content-Type': 'application/json']
+    headers = ['Authorization': result('authorizeReject').authorization, 'Content-Type': 'application/json']
     data = '{"message":"Der CSV-Snapshot verletzt das gebundene Modell."}'
 }
 
