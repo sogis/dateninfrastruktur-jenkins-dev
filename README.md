@@ -1,25 +1,28 @@
 # Jenkins-Laufzeit für die Dateninfrastruktur
 
-Jenkins läuft im gemeinsamen Compose-Projekt des Schwesterrepositories
-`dateninfrastruktur-dev-stack`. Dessen `services/jenkins/jenkins-stack.yaml`
-ist die gemeinsame JCasC-Quelle. Sie bindet Keycloak, das Plugin
-`jenkins-gretl-dateninfrastruktur-plugin` und die internen Admin-Endpunkte.
-
-Für einen lokalen Kandidaten aus den sechs zusammengehörigen Checkouts:
+Jenkins läuft mit Java 21 im gemeinsamen Compose-Projekt. Der Dev-Stack
+liefert die JCasC-Konfiguration für Keycloak, Admin und die technischen
+Credentials. Das Plugin aus dem Schwestercheckout stellt die
+CSV-Anlieferung bereit und startet den festen Job.
 
 ```sh
 IMAGE_NAME=dateninfrastruktur-jenkins:mein-kandidat ./bin/build-image.sh <neues-kontextverzeichnis>
 ```
 
-Der Build benötigt Java 21, Maven und Docker mit Buildx. Er ermittelt das
-aktuelle GRETL-5-Snapshot aus dem Maven-Repository, löst dessen Laufzeit-JARs
-auf und nimmt sie zusammen mit den DuckDB-Erweiterungen als geprüftes
-Offline-Bundle ins Image auf. Der Build dokumentiert die konkrete
-Snapshot-Version und die SHA-256-Prüfsummen. Das HPI kommt aus dem
-Schwestercheckout. Modelle, Verträge und Runner liegen schreibgeschützt im
-Image. GRETL läuft mit Java 17.
+Der Build benötigt Java 21, Maven und Docker Buildx. Gradle löst
+`ch.so.agi.gretl:gretl-dist:6.0.0-SNAPSHOT:bin@zip` aus dem
+Maven-Snapshot-Repository `https://jars.interlis.guru/snapshots` auf.
+Das Image installiert die Distribution unter `/opt/gretl` und ergänzt den
+ClickHouse-JDBC-Treiber. Für eine Aktualisierung den Image-Build erneut ausführen.
 
-Der Stack verwendet ein persistentes Jenkins-Home. Der generische
-Job `di-csv-ingest` verarbeitet gebundene Lieferpläne. Die Anlieferung ist
-unter `/anlieferung` erreichbar. Die Betriebsbefehle stehen im
-[Compose-Betrieb](../dateninfrastruktur-dev-stack/docs/operations.md).
+Jenkins startet `/opt/gretl/bin/gretl run /opt/dateninfrastruktur/csv-delivery/job.groovy`
+mit Java 25, einer Parameterdatei und privaten Laufzeit-Credentials.
+GRETL holt einen technischen Token und das gebundene INTERLIS-Modell von Admin.
+Replace verwendet die Eingabedatei. Append lädt den bisherigen CSV-Snapshot und
+fügt neue Zeilen mit DuckDB an. GRETL validiert den vollständigen Snapshot,
+schreibt ihn in ClickHouse und Garage und meldet die Zeilenzahl an Admin.
+Admin entscheidet über die Annahme.
+
+Den Image-Build und den Ablauf im
+[isolierten Compose-Test](../dateninfrastruktur-dev-stack/docs/operations.md#csv-anlieferung-mit-gretl-6)
+prüfen.
