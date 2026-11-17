@@ -23,6 +23,12 @@ fügt neue Zeilen mit DuckDB an. GRETL validiert den vollständigen Snapshot,
 schreibt ihn in ClickHouse und Garage und meldet die Zeilenzahl an Admin.
 Admin entscheidet über die Annahme.
 
+Den gezielten Reject-Test mit der veröffentlichten Distribution ausführen:
+
+```sh
+JAVA_HOME=<Java-25-Verzeichnis> python3 tests/test_delivery_reject.py <GRETL-Verzeichnis>/bin/gretl
+```
+
 Den Image-Build und den Ablauf im
 [isolierten Compose-Test](../dateninfrastruktur-dev-stack/docs/operations.md#csv-anlieferung-mit-gretl-6)
 prüfen.
