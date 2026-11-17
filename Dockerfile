@@ -20,15 +20,15 @@ ENV TZ=Europe/Zurich \
     JENKINS_JAVA_OPTS=-Djenkins.install.runSetupWizard=false
 COPY --from=gretl_java /opt/java/openjdk /opt/java/gretl
 COPY --from=gretl_dist /opt/gretl /opt/gretl
-COPY --chown=jenkins:jenkins --chmod=0644 plugins.txt /usr/share/jenkins/ref/plugins.txt
-COPY --chmod=0644 oidc-plugin.sha256 /opt/dateninfrastruktur/oidc-plugin.sha256
+COPY --chown=jenkins:jenkins --chmod=u=rwX,go=rX plugins.txt /usr/share/jenkins/ref/plugins.txt
+COPY --chmod=u=rwX,go=rX oidc-plugin.sha256 /opt/dateninfrastruktur/oidc-plugin.sha256
 USER jenkins
 RUN jenkins-plugin-cli --latest=false --plugin-file /usr/share/jenkins/ref/plugins.txt && cd /usr/share/jenkins/ref/plugins && sha256sum -c /opt/dateninfrastruktur/oidc-plugin.sha256 && mv oic-auth.jpi oic-auth.jpi.override
 USER root
-COPY --chown=root:root --chmod=0644 jobs/csv-delivery/append.sql jobs/csv-delivery/job.groovy /opt/dateninfrastruktur/csv-delivery/
-COPY --from=build-inputs --chown=root:root --chmod=0644 jenkins.yaml /usr/share/jenkins/ref/casc_configs/jenkins.yaml
+COPY --chown=root:root --chmod=u=rwX,go=rX jobs/csv-delivery /opt/dateninfrastruktur/csv-delivery
+COPY --from=build-inputs --chown=root:root --chmod=u=rwX,go=rX jenkins.yaml /usr/share/jenkins/ref/casc_configs/jenkins.yaml
 COPY --chown=root:root --chmod=0755 docker-entrypoint.sh /usr/local/bin/di-jenkins-entrypoint.sh
-COPY --from=build-inputs --chown=jenkins:jenkins --chmod=0644 delivery.jpi /usr/share/jenkins/ref/plugins/jenkins-gretl-dateninfrastruktur-plugin.jpi.override
+COPY --from=build-inputs --chown=jenkins:jenkins --chmod=u=rwX,go=rX delivery.jpi /usr/share/jenkins/ref/plugins/jenkins-gretl-dateninfrastruktur-plugin.jpi.override
 USER jenkins
 ENV CASC_JENKINS_CONFIG=/usr/share/jenkins/ref/casc_configs/jenkins.yaml
 ENTRYPOINT ["/usr/local/bin/di-jenkins-entrypoint.sh"]
