@@ -7,7 +7,15 @@ if [[ $# -ne 1 ]]; then
   exit 2
 fi
 context="$1"
-"$root/bin/prepare-image-context.sh" "$context"
+(umask 077; mkdir "$context")
+
+source "$root/bin/java-env.sh"
+activate_java_home "$(resolve_java_home 21 JAVA21_HOME 'Java 21 for the Jenkins HPI')"
+plugin="$root/../dateninfrastruktur-jenkins-gretl-plugin"
+(cd "$plugin" && mvn -ntp clean package)
+cp "$root/../dateninfrastruktur-dev-stack/services/jenkins/jenkins-stack.yaml" "$context/jenkins.yaml"
+cp "$plugin/target/jenkins-gretl-dateninfrastruktur-plugin.hpi" "$context/delivery.jpi"
 args=(buildx build --load --no-cache-filter gretl_dist)
 if [[ -n "${IMAGE_PLATFORM:-}" ]]; then args+=(--platform "$IMAGE_PLATFORM"); fi
-docker "${args[@]}" --build-arg "IMAGE_VERSION=${IMAGE_VERSION:-local}" -t "$IMAGE_NAME" "$context"
+exec docker "${args[@]}" --build-context "build-inputs=$context" \
+  --build-arg "IMAGE_VERSION=${IMAGE_VERSION:-local}" -t "$IMAGE_NAME" "$root"

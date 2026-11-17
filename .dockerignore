@@ -1,0 +1,8 @@
+**
+!Dockerfile
+!docker-entrypoint.sh
+!gretl-dist.gradle
+!plugins.txt
+!oidc-plugin.sha256
+!jobs/csv-delivery/append.sql
+!jobs/csv-delivery/job.groovy
