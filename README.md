@@ -9,7 +9,10 @@ CSV-Anlieferung bereit und startet den festen Job.
 IMAGE_NAME=dateninfrastruktur-jenkins:mein-kandidat ./bin/build-image.sh <neues-kontextverzeichnis>
 ```
 
-Der Build benötigt Java 21, Maven und Docker Buildx. Gradle löst
+Der Build benötigt Java 21, Maven und Docker Buildx. Das neue
+Kontextverzeichnis enthält das gebaute HPI und die JCasC-Datei. Buildx
+liest die Jenkins-Buildquellen direkt aus diesem Checkout.
+Gradle löst
 `ch.so.agi.gretl:gretl-dist:6.0.0-SNAPSHOT:bin@zip` aus dem
 Maven-Snapshot-Repository `https://jars.interlis.guru/snapshots` auf.
 Das Image installiert die Distribution unter `/opt/gretl` und ergänzt den
